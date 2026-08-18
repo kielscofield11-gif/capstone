@@ -1,0 +1,37 @@
+/vendor/
+/node_modules/
+/.env
+/.env.backup*
+/.env.*
+!/.env.example
+/.phpunit.result.cache
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/app/*
+!/storage/app/.gitignore
+/storage/app/public/*
+/bootstrap/cache/*.php
+/storage/framework/testing/*
+/public/storage
+
+# Local databases and database exports
+/*.sqlite
+/*.sqlite3
+/*.db
+/*.sql
+database/*.sqlite
+database/*.sqlite3
+database/*.db
+database/*.sql
+
+# Local IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
