@@ -13,7 +13,7 @@
         </a>
     </div>
 
-    <div class="overflow-x-auto">
+    <div class="responsive-table" tabindex="0" role="region" aria-label="Users table">
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-gray-50 border-b border-gray-100">
@@ -40,7 +40,7 @@
                         <td class="px-4 md:px-5 py-3 text-gray-600 hidden sm:table-cell">{{ $user->email }}</td>
                         <td class="px-4 md:px-5 py-3">
                             <span class="inline-flex items-center text-xs px-2.5 py-1 rounded-full font-medium capitalize {{ $user->role == 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : ($user->role == 'secretary' ? 'bg-blue-50 text-blue-700 border border-blue-200' : ($user->role == 'kagawad' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-50 text-gray-700 border border-gray-200')) }}">
-                                {{ $user->role }}
+                                {{ $user->role_label }}
                             </span>
                         </td>
                         <td class="px-4 md:px-5 py-3">

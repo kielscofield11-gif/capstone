@@ -5,8 +5,15 @@
 
 @section('content')
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 max-w-3xl mx-auto">
-    <form method="POST" action="{{ route('residents.store') }}" class="p-6 md:p-8 space-y-8">
+    <form method="POST" action="{{ route('residents.store') }}" enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
         @csrf
+        @if(session('duplicate_candidates'))
+        <div role="alert" class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 break-anywhere">
+            <p class="font-semibold">Possible duplicate resident found</p>
+            @foreach(session('duplicate_candidates') as $candidate)<p class="mt-1"><a class="underline" href="{{ route('residents.show', $candidate) }}">{{ $candidate->full_name }}</a> — {{ $candidate->birth_date->format('M d, Y') }}{{ $candidate->household ? ' — '.$candidate->household->household_number : '' }}</p>@endforeach
+            <label class="mt-3 flex min-h-11 items-center gap-3 rounded-lg p-2 font-medium"><input type="checkbox" name="duplicate_override" value="1" class="w-5 h-5"> Continue anyway — I confirm this is a different person.</label>
+        </div>
+        @endif
 
         <div>
             <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
@@ -69,14 +76,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Household</label>
-                    <select name="household_id" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <select name="household_id" id="household_id" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
                         <option value="">None</option>
                         @foreach($households as $h)
-                            <option value="{{ $h->id }}" {{ old('household_id', $preselectedHouseholdId ?? '') == $h->id ? 'selected' : '' }}>
+                            <option value="{{ $h->id }}" data-context="{{ $h->street_address ?: $h->purok }}" data-members='@json($h->residents->map(fn($r) => ["name" => $r->full_name, "head" => $r->is_household_head]))' {{ old('household_id', $preselectedHouseholdId ?? '') == $h->id ? 'selected' : '' }}>
                                 {{ $h->household_number }} - {{ $h->purok ?? 'No purok' }}
                             </option>
                         @endforeach
                     </select>
+                    <div id="household-context" class="mt-2 text-xs text-gray-600"></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Classification</label>
@@ -104,7 +112,9 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div x-data="{ preview: null }"><label for="photo" class="block text-sm font-medium text-gray-700 mb-1">Resident Photo</label><input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" @change="preview && URL.revokeObjectURL(preview); preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null" class="block min-h-11 w-full max-w-full text-sm text-gray-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:text-brand-800"><img x-show="preview" :src="preview" alt="Selected resident photo preview" class="mt-3 h-40 w-40 max-w-full rounded-xl border object-cover" x-cloak><p class="mt-1 text-xs text-gray-500">Choose from camera or gallery. JPEG, PNG, or WebP; maximum 2 MB.</p>@error('photo')<p role="alert" class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror</div>
+
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('residents.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium bg-brand-800 text-white rounded-lg hover:bg-brand-900 focus:ring-4 focus:ring-brand-200 transition-all">
                 Save Resident
@@ -113,3 +123,4 @@
     </form>
 </div>
 @endsection
+@push('scripts')<script>const householdSelect=document.getElementById('household_id');function showHousehold(){const option=householdSelect?.options[householdSelect.selectedIndex],box=document.getElementById('household-context');if(!option?.value){box.textContent='No household selected.';return;}let members=[];try{members=JSON.parse(option.dataset.members||'[]')}catch(e){}box.textContent=`${option.dataset.context||'Address not specified'} · Members: ${members.length ? members.map(m=>m.name+(m.head?' (Head)':'')).join(', ') : 'None'}`;}householdSelect?.addEventListener('change',showHousehold);showHousehold();</script>@endpush

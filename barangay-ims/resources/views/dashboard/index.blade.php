@@ -4,7 +4,7 @@
 @section('header', 'Dashboard')
 
 @section('content')
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
+<div class="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
     <x-stat-card gradient="from-blue-500 to-blue-700" :value="$totalResidents" label="Total Residents" :sublabel="'+' . $todayResidents . ' today'" :icon="'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'" :href="route('residents.index')" />
     <x-stat-card gradient="from-emerald-500 to-emerald-700" :value="$totalHouseholds" label="Households" :sublabel="$avgHouseholdSize . ' avg'" :icon="'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'" :href="route('households.index')" />
     <x-stat-card gradient="from-amber-500 to-amber-700" :value="$totalBlotters" label="Blotter Records" :sublabel="$blotterResolvedRate . '% resolved'" :icon="'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'" :href="route('blotters.index')" />
@@ -65,7 +65,7 @@
         <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
             <h3 class="font-semibold text-gray-900">Monthly Trends (Last 6 Months)</h3>
         </div>
-        <div class="p-5">
+        <div class="p-4 sm:p-5 overflow-hidden">
             @php
                 $maxTrend = max(
                     $residentsByMonth->max('total') ?? 0,
@@ -73,13 +73,14 @@
                     $blottersByMonth->max('total') ?? 0,
                     1
                 );
+                $hasTrendData = $residentsByMonth->sum('total') + $documentsByMonth->sum('total') + $blottersByMonth->sum('total') > 0;
 
                 $monthLabels = $residentsByMonth->pluck('label');
                 $residentsByMonth = $residentsByMonth->keyBy('label');
                 $documentsByMonth = $documentsByMonth->keyBy('label');
                 $blottersByMonth = $blottersByMonth->keyBy('label');
             @endphp
-            @if($residentsByMonth->count() > 0 || $documentsByMonth->count() > 0 || $blottersByMonth->count() > 0)
+            @if($hasTrendData)
                 <div class="space-y-4">
                     @foreach($monthLabels as $label)
                         @php

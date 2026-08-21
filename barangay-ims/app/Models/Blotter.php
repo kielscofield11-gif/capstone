@@ -48,4 +48,10 @@ class Blotter extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function scopeHearingsBetween($query, $from, $to)
+    {
+        return $query->whereNotNull('hearing_date')
+            ->whereBetween('hearing_date', [$from, $to]);
+    }
 }

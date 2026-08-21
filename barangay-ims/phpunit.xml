@@ -27,6 +27,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="SESSION_LIFETIME" value="30"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="SEED_ADMIN_PASSWORD" value="test-admin-password"/>
         <env name="SEED_SECRETARY_PASSWORD" value="test-secretary-password"/>

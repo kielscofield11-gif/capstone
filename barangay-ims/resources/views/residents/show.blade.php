@@ -8,9 +8,7 @@
     <div class="lg:col-span-1 space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="text-center mb-4">
-                <div class="w-16 h-16 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                    {{ substr($resident->full_name, 0, 2) }}
-                </div>
+                @if($resident->photo_path)<img src="{{ Storage::disk('public')->url($resident->photo_path) }}" alt="Photo of {{ $resident->full_name }}" class="w-24 h-24 rounded-xl object-cover mx-auto mb-3 border border-gray-200">@else<div class="w-24 h-24 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center text-xl font-bold mx-auto mb-3">{{ substr($resident->full_name, 0, 2) }}</div>@endif
                 <h3 class="font-semibold text-gray-900">{{ $resident->full_name }}</h3>
                 <p class="text-xs text-gray-400 capitalize">{{ $resident->gender }} &middot; {{ $resident->age }} yrs old</p>
             </div>
@@ -46,14 +44,18 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                     Barangay Clearance
                 </a>
+                @can('update', $resident)
                 <a href="{{ route('residents.edit', $resident) }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-brand-800 text-white rounded-lg text-sm font-medium hover:bg-brand-900 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Edit Resident
                 </a>
+                @endcan
+                @can('delete', $resident)
                 <button type="button" onclick="openModal_deleteModal('{{ route('residents.destroy', $resident) }}')" class="inline-flex w-full items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     Delete Resident
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -82,7 +84,7 @@
                 <h3 class="font-semibold text-gray-900">Personal Information</h3>
             </div>
             <div class="p-5">
-                <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <dl class="grid grid-cols-1 min-[390px]:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm break-anywhere">
                     <div>
                         <dt class="text-gray-500 text-xs">Birth Date</dt>
                         <dd class="font-medium text-gray-900">{{ $resident->birth_date->format('M d, Y') }} ({{ $resident->age }} yrs old)</dd>
@@ -124,6 +126,8 @@
                     {{ $resident->household->household_number }} &mdash; {{ $resident->household->purok ?? 'No purok' }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>
+                <p class="mt-2 text-sm text-gray-600">{{ $resident->household->street_address ?: ($resident->household->purok ?: 'Address not specified') }}</p>
+                <div class="mt-3 border-t border-gray-100 pt-3"><p class="text-xs font-semibold uppercase text-gray-500">Other household members</p>@foreach($resident->household->residents->where('id', '!=', $resident->id) as $member)<a href="{{ route('residents.show', $member) }}" class="mt-1 block text-sm text-brand-600 hover:underline">{{ $member->full_name }}{{ $member->is_household_head ? ' (Head)' : '' }}</a>@endforeach</div>
             @else
                 <p class="text-gray-400 text-sm">Not assigned to any household.</p>
             @endif

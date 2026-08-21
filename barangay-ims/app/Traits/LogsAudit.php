@@ -2,23 +2,33 @@
 
 namespace App\Traits;
 
-use App\Models\AuditLog;
-use Illuminate\Support\Facades\Auth;
+use App\Services\AuditLogger;
+use Illuminate\Database\Eloquent\Model;
 
 trait LogsAudit
 {
-    protected function logAudit(string $action, string $modelType, string $description, $modelId = null, ?array $oldValues = null, ?array $newValues = null): void
+    protected function auditSnapshot(Model $model): array
     {
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => $action,
-            'model_type' => $modelType,
-            'model_id' => $modelId,
-            'description' => $description,
-            'old_values' => $oldValues,
-            'new_values' => $newValues,
-            'ip_address' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
-        ]);
+        return app(AuditLogger::class)->snapshot($model);
+    }
+
+    protected function auditCreated(Model $model, string $description): void
+    {
+        app(AuditLogger::class)->created($model, $description);
+    }
+
+    protected function auditUpdated(Model $model, array $before, string $description, string $action = 'updated'): void
+    {
+        app(AuditLogger::class)->updated($model, $before, $description, $action);
+    }
+
+    protected function auditDeleted(Model $model, array $before, string $description): void
+    {
+        app(AuditLogger::class)->deleted($model, $before, $description);
+    }
+
+    protected function auditEvent(string $action, Model $model, string $description, ?array $oldValues = null, ?array $newValues = null): void
+    {
+        app(AuditLogger::class)->event($action, $model, $description, $oldValues, $newValues);
     }
 }

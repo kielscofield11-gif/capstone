@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Blotter;
 use App\Models\Resident;
 use App\Traits\LogsAudit;
+use App\Services\NumberSequenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class BlotterController extends Controller
 {
     use LogsAudit;
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Blotter::class);
         $query = Blotter::with(['complainant', 'respondent']);
 
         if ($request->filled('search')) {
@@ -48,14 +51,15 @@ class BlotterController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Blotter::class);
         $residents = Resident::orderBy('last_name')->get();
         return view('blotters.create', compact('residents'));
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Blotter::class);
         $validated = $request->validate([
-            'blotter_number' => 'required|string|max:50|unique:blotters',
             'complainant_id' => 'required|exists:residents,id|different:respondent_id',
             'respondent_id' => 'required|exists:residents,id|different:complainant_id',
             'incident_type' => 'required|string|max:255',
@@ -67,35 +71,42 @@ class BlotterController extends Controller
             'resolution' => 'nullable|string',
         ]);
 
-        $validated['created_by'] = Auth::id();
+        $blotter = DB::transaction(function () use ($validated) {
+            $year = now()->year;
+            $validated['blotter_number'] = app(NumberSequenceService::class)->nextFormatted(
+                'blotter', 'B', $year,
+                fn () => $this->historicalMaximum(Blotter::query()->whereYear('created_at', $year)->pluck('blotter_number'), 'B', $year)
+            );
+            $validated['created_by'] = Auth::id();
+            if (in_array($validated['status'], ['resolved', 'dismissed'])) {
+                $validated['resolved_by'] = Auth::id();
+            }
+            return Blotter::create($validated);
+        });
 
-        if (in_array($validated['status'], ['resolved', 'dismissed'])) {
-            $validated['resolved_by'] = Auth::id();
-        }
+        $this->auditCreated($blotter, "Created blotter {$blotter->blotter_number}");
 
-        $blotter = Blotter::create($validated);
-
-        $this->logAudit('created', Blotter::class, "Created blotter {$blotter->blotter_number}", $blotter->id);
-
-        return redirect()->route('blotters.index')->with('success', 'Blotter record created successfully.');
+        return redirect()->route('blotters.show', $blotter)->with('success', "Blotter {$blotter->blotter_number} created successfully.");
     }
 
     public function show(Blotter $blotter)
     {
+        $this->authorize('view', $blotter);
         $blotter->load(['complainant', 'respondent', 'resolvedBy', 'createdBy']);
         return view('blotters.show', compact('blotter'));
     }
 
     public function edit(Blotter $blotter)
     {
+        $this->authorize('update', $blotter);
         $residents = Resident::orderBy('last_name')->get();
         return view('blotters.edit', compact('blotter', 'residents'));
     }
 
     public function update(Request $request, Blotter $blotter)
     {
+        $this->authorize('update', $blotter);
         $validated = $request->validate([
-            'blotter_number' => 'required|string|max:50|unique:blotters,blotter_number,' . $blotter->id,
             'complainant_id' => 'required|exists:residents,id|different:respondent_id',
             'respondent_id' => 'required|exists:residents,id|different:complainant_id',
             'incident_type' => 'required|string|max:255',
@@ -113,20 +124,34 @@ class BlotterController extends Controller
             $validated['resolved_by'] = null;
         }
 
+        $before = $this->auditSnapshot($blotter);
         $blotter->update($validated);
 
-        $this->logAudit('updated', Blotter::class, "Updated blotter {$blotter->blotter_number}", $blotter->id);
+        $this->auditUpdated($blotter, $before, "Updated blotter {$blotter->blotter_number}");
 
         return redirect()->route('blotters.index')->with('success', 'Blotter record updated successfully.');
     }
 
     public function destroy(Blotter $blotter)
     {
+        $this->authorize('delete', $blotter);
         $number = $blotter->blotter_number;
+        $before = $this->auditSnapshot($blotter);
         $blotter->delete();
 
-        $this->logAudit('deleted', Blotter::class, "Deleted blotter {$number}", $blotter->id);
+        $this->auditDeleted($blotter, $before, "Deleted blotter {$number}");
 
         return redirect()->route('blotters.index')->with('success', 'Blotter record deleted successfully.');
+    }
+
+    private function historicalMaximum($numbers, string $prefix, int $year): int
+    {
+        $maximum = 0;
+        foreach ($numbers as $number) {
+            if (preg_match('/^'.preg_quote($prefix, '/').'-'.$year.'-(\d+)$/', (string) $number, $matches)) {
+                $maximum = max($maximum, (int) $matches[1]);
+            }
+        }
+        return $maximum;
     }
 }

@@ -6,10 +6,11 @@ use App\Models\Blotter;
 use App\Models\DocumentRequest;
 use App\Models\Household;
 use App\Models\Resident;
+use App\Services\ChartDataService;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(ChartDataService $charts)
     {
         $totalResidents = Resident::count();
         $totalHouseholds = Household::count();
@@ -23,10 +24,7 @@ class DashboardController extends Controller
         $voterCount = Resident::where('is_voter', true)->count();
         $fourPsCount = Resident::where('is_4ps', true)->count();
 
-        $genderDistribution = Resident::select('gender')
-            ->whereNotNull('gender')
-            ->get()
-            ->countBy('gender');
+        $genderDistribution = $charts->grouped(Resident::query()->whereNotNull('gender'), 'gender')->pluck('total', 'gender');
 
         $todayResidents = Resident::whereDate('created_at', today())->count();
         $todayBlotters = Blotter::whereDate('created_at', today())->count();
@@ -40,58 +38,12 @@ class DashboardController extends Controller
         $recentBlotters = Blotter::with(['complainant', 'respondent'])->latest()->take(5)->get();
         $recentDocuments = DocumentRequest::with(['resident', 'documentType'])->latest()->take(5)->get();
 
-        $residentByPurok = Resident::select('purok')
-            ->whereNotNull('purok')
-            ->get()
-            ->countBy('purok')
-            ->map(fn ($total, $purok) => (object) ['purok' => $purok, 'total' => $total])
-            ->sortByDesc('total')
-            ->values();
-
-        $blotterByStatus = Blotter::select('status')
-            ->get()
-            ->countBy('status')
-            ->map(fn ($total, $status) => (object) ['status' => $status, 'total' => $total])
-            ->values();
-
-        $documentByStatus = DocumentRequest::select('status')
-            ->get()
-            ->countBy('status')
-            ->map(fn ($total, $status) => (object) ['status' => $status, 'total' => $total])
-            ->values();
-
-        $residentsByMonth = Resident::query()
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->get(['created_at'])
-            ->groupBy(fn ($item) => $item->created_at->format('Y-m'))
-            ->sortKeys()
-            ->map(fn ($items) => [
-                'label' => $items->first()->created_at->format('M Y'),
-                'total' => $items->count(),
-            ])
-            ->values();
-
-        $documentsByMonth = DocumentRequest::query()
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->get(['created_at'])
-            ->groupBy(fn ($item) => $item->created_at->format('Y-m'))
-            ->sortKeys()
-            ->map(fn ($items) => [
-                'label' => $items->first()->created_at->format('M Y'),
-                'total' => $items->count(),
-            ])
-            ->values();
-
-        $blottersByMonth = Blotter::query()
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->get(['created_at'])
-            ->groupBy(fn ($item) => $item->created_at->format('Y-m'))
-            ->sortKeys()
-            ->map(fn ($items) => [
-                'label' => $items->first()->created_at->format('M Y'),
-                'total' => $items->count(),
-            ])
-            ->values();
+        $residentByPurok = $charts->grouped(Resident::query()->whereNotNull('purok'), 'purok')->sortByDesc('total')->values();
+        $blotterByStatus = $charts->grouped(Blotter::query(), 'status');
+        $documentByStatus = $charts->grouped(DocumentRequest::query(), 'status');
+        $residentsByMonth = $charts->monthly(Resident::query());
+        $documentsByMonth = $charts->monthly(DocumentRequest::query());
+        $blottersByMonth = $charts->monthly(Blotter::query());
 
         $blotterResolvedRate = $totalBlotters > 0
             ? round((Blotter::whereIn('status', ['resolved', 'dismissed'])->count() / $totalBlotters) * 100)

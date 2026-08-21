@@ -8,7 +8,7 @@
     <form method="POST" action="{{ route('documents.update', $document) }}" class="p-6 md:p-8 space-y-5">
         @csrf @method('PUT')
 
-        <x-input-field name="control_number" label="Control Number" :required="true" placeholder="DC-2024-001" value="{{ old('control_number', $document->control_number) }}" />
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Control Number</label><div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-900">{{ $document->control_number }}</div></div>
 
         <x-input-field name="resident_id" label="Resident" type="select" :required="true" value="{{ old('resident_id', $document->resident_id) }}" :options="['' => 'Select Resident'] + $residents->pluck('full_name', 'id')->toArray()" />
 
@@ -27,7 +27,7 @@
 
         <x-input-field name="remarks" label="Remarks" type="textarea" value="{{ old('remarks', $document->remarks) }}" />
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('documents.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium bg-brand-800 text-white rounded-lg hover:bg-brand-900 focus:ring-4 focus:ring-brand-200 transition-all">Update Request</button>
         </div>

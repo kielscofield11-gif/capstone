@@ -32,10 +32,12 @@
                     </dd>
                 </div>
             </dl>
+            @can('update', $household)
             <a href="{{ route('households.edit', $household) }}" class="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2 bg-brand-800 text-white rounded-lg text-sm font-medium hover:bg-brand-900 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 Edit Household
             </a>
+            @endcan
         </div>
     </div>
 
@@ -43,12 +45,17 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100">
             <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-semibold text-gray-900">Members ({{ $household->residents->count() }})</h3>
+                @can('create', \App\Models\Resident::class)
                 <a href="{{ route('residents.create', ['household_id' => $household->id]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Add Member
                 </a>
+                @endcan
             </div>
-            <div class="overflow-x-auto">
+            @if($household->residents->where('is_household_head', true)->count() > 1)
+            <div class="mx-5 mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">Multiple residents are marked as household heads. No head was changed automatically.</div>
+            @endif
+            <div class="responsive-table" tabindex="0" role="region" aria-label="Household members table">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-100">

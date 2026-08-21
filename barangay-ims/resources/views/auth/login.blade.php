@@ -17,7 +17,7 @@
 <div class="min-h-screen flex items-center justify-center login-bg relative p-4">
     <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-brand-900/60"></div>
     <div class="w-full max-w-md relative animate-fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up">
+        <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div class="text-center mb-6">
                 <img src="/images/logo.png" alt="Barangay Logo" class="w-16 h-16 mx-auto mb-3 object-contain">
                 <h1 class="text-xl font-bold text-gray-900">Barangay Concepcion</h1>

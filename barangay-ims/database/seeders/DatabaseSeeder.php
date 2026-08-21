@@ -30,5 +30,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DocumentTypeSeeder::class,
         ]);
+
+        if (filter_var(env('SEED_MOCK_DATA', false), FILTER_VALIDATE_BOOL)) {
+            $this->call(MockDataSeeder::class);
+        }
     }
 }

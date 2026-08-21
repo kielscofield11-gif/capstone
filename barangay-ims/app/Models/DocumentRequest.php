@@ -21,12 +21,16 @@ class DocumentRequest extends Model
         'approved_by',
         'approved_date',
         'released_date',
+        'issued_document_snapshot',
+        'issued_at',
     ];
 
     protected $casts = [
         'fee_amount' => 'decimal:2',
         'approved_date' => 'date',
         'released_date' => 'date',
+        'issued_document_snapshot' => 'array',
+        'issued_at' => 'datetime',
     ];
 
     public function resident()
@@ -47,5 +51,10 @@ class DocumentRequest extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
     }
 }

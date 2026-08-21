@@ -12,6 +12,9 @@ use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResidentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DocumentTemplateController;
+use App\Http\Controllers\GeneratedDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -27,10 +30,13 @@ Route::middleware('guest')->group(function () {
 
 
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
     Route::resource('residents', ResidentController::class);
     Route::resource('households', HouseholdController::class);
@@ -38,11 +44,11 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('documents', DocumentController::class);
 
-    Route::middleware('role:admin,secretary,kagawad')->group(function () {
-        Route::patch('/documents/{document}/approve', [DocumentController::class, 'approve'])->name('documents.approve');
-        Route::patch('/documents/{document}/release', [DocumentController::class, 'release'])->name('documents.release');
-        Route::patch('/documents/{document}/cancel', [DocumentController::class, 'cancel'])->name('documents.cancel');
-    });
+    Route::patch('/documents/{document}/approve', [DocumentController::class, 'approve'])->name('documents.approve');
+    Route::patch('/documents/{document}/release', [DocumentController::class, 'release'])->name('documents.release');
+    Route::patch('/documents/{document}/cancel', [DocumentController::class, 'cancel'])->name('documents.cancel');
+    Route::get('/documents/{document}/preview', [GeneratedDocumentController::class, 'preview'])->name('documents.preview');
+    Route::get('/documents/{document}/pdf', [GeneratedDocumentController::class, 'pdf'])->name('documents.generated-pdf');
 
     Route::resource('document-types', DocumentTypeController::class)->except(['show']);
 
@@ -58,10 +64,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/blotters/pdf', [ExportController::class, 'blottersPdf'])->name('blotters.pdf');
         Route::get('/documents/pdf', [ExportController::class, 'documentsPdf'])->name('documents.pdf');
         Route::get('/residents/{resident}/clearance', [ExportController::class, 'clearancePdf'])->name('clearance.pdf');
+        Route::get('/residents/excel', [ExportController::class, 'residentsExcel'])->name('residents.excel');
+        Route::get('/households/excel', [ExportController::class, 'householdsExcel'])->name('households.excel');
+        Route::get('/blotters/excel', [ExportController::class, 'blottersExcel'])->name('blotters.excel');
+        Route::get('/documents/excel', [ExportController::class, 'documentsExcel'])->name('documents.excel');
     });
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::resource('document-templates', DocumentTemplateController::class)->except(['show']);
     });
 });

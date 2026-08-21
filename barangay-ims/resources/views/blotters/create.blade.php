@@ -9,7 +9,7 @@
         @csrf
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <x-input-field name="blotter_number" label="Blotter Number" :required="true" placeholder="B-2024-001" value="{{ old('blotter_number') }}" />
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">Blotter Number</label><div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">Automatically generated upon saving</div></div>
             <x-input-field name="incident_type" label="Incident Type" :required="true" placeholder="Physical Injury" value="{{ old('incident_type') }}" />
         </div>
 
@@ -32,7 +32,7 @@
 
         <x-input-field name="resolution" label="Resolution" type="textarea" placeholder="Resolution details..." value="{{ old('resolution') }}" />
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('blotters.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium bg-brand-800 text-white rounded-lg hover:bg-brand-900 focus:ring-4 focus:ring-brand-200 transition-all">Save Blotter</button>
         </div>

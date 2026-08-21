@@ -17,7 +17,7 @@
 <div class="min-h-screen flex items-center justify-center login-bg relative p-4">
     <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-brand-900/60"></div>
     <div class="w-full max-w-md relative animate-fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up">
+        <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div class="text-center mb-6">
                 <img src="/images/logo.png" alt="Barangay Logo" class="w-16 h-16 mx-auto mb-3 object-contain">
                 <h1 class="text-xl font-bold text-gray-900">Create Account</h1>
@@ -60,7 +60,7 @@
 
                 <div class="mb-5">
                     <x-input-field name="password" label="Password" type="password" :required="true" placeholder="Enter a password" autocomplete="new-password" class="[&_input]:rounded-xl" />
-                    <p class="text-xs text-gray-500 mt-1.5">Must be at least 8 characters.</p>
+                    <p class="text-xs text-gray-500 mt-1.5">Use at least 10 characters with upper and lower case letters, a number, and a symbol.</p>
                 </div>
 
                 <div class="mb-5">

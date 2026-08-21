@@ -1,51 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Blotters Report</title>
-    <style>
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 10px; color: #333; }
-        h1 { font-size: 18px; text-align: center; margin-bottom: 4px; color: #1e3a5f; }
-        .subtitle { text-align: center; font-size: 11px; color: #666; margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #1e3a5f; color: white; padding: 6px 8px; text-align: left; font-size: 9px; text-transform: uppercase; }
-        td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
-        tr:nth-child(even) { background: #f9fafb; }
-        .total { text-align: right; font-weight: bold; margin-top: 10px; font-size: 11px; }
-        .footer { text-align: center; font-size: 8px; color: #999; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
-    </style>
-</head>
-<body>
-    <div style="text-align: center; margin-bottom: 10px;">
-        <img src="{{ public_path('images/logo.png') }}" alt="Barangay Logo" style="width: 40px; height: 40px; object-fit: contain;">
-    </div>
-    <h1>Barangay Concepcion — Blotter Report</h1>
-    <p class="subtitle">Generated {{ now()->format('F d, Y') }}</p>
-    <table>
-        <thead>
-            <tr>
-                <th>Blotter #</th>
-                <th>Complainant</th>
-                <th>Respondent</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($blotters as $b)
-                <tr>
-                    <td>{{ $b->blotter_number }}</td>
-                    <td>{{ $b->complainant?->full_name ?? 'N/A' }}</td>
-                    <td>{{ $b->respondent?->full_name ?? 'N/A' }}</td>
-                    <td>{{ $b->incident_type }}</td>
-                    <td>{{ $b->incident_date?->format('M d, Y') }}</td>
-                    <td>{{ ucfirst($b->status) }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-    <p class="total">Total Blotter Records: {{ $totalCount }}</p>
-    <div class="footer">Barangay Concepcion Information Management System — This is a system-generated report.</div>
-</body>
-</html>
+<!doctype html><html><head><meta charset="utf-8"><title>Blotter Report</title><style>@include('exports.partials.report-pdf-styles')</style></head><body>
+<div class="report-header"><img src="{{ public_path('images/logo.png') }}" alt="" class="report-logo"><h1>Barangay Concepcion &mdash; Blotter Report</h1><p class="subtitle">Generated {{ now()->format('F d, Y, g:i A') }}</p></div>
+<div class="summary"><strong>Total blotter records:</strong> {{ number_format($totalCount) }}</div>
+<table><thead><tr><th style="width:15%">Blotter No.</th><th style="width:20%">Complainant</th><th style="width:20%">Respondent</th><th style="width:20%">Type</th><th style="width:14%">Date</th><th style="width:11%">Status</th></tr></thead><tbody>
+@forelse($blotters as $blotter)<tr><td>{{ $blotter->blotter_number }}</td><td>{{ $blotter->complainant?->full_name ?: 'N/A' }}</td><td>{{ $blotter->respondent?->full_name ?: 'N/A' }}</td><td>{{ $blotter->incident_type }}</td><td class="nowrap">{{ $blotter->incident_date?->format('M d, Y') }}</td><td class="center">{{ ucfirst($blotter->status) }}</td></tr>@empty<tr><td colspan="6" class="empty">No blotter records matched the selected filters.</td></tr>@endforelse
+</tbody></table><div class="report-footer">Barangay Concepcion Information Management System &mdash; System-generated report</div></body></html>

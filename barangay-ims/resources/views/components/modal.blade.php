@@ -12,9 +12,9 @@ $config = $typeConfig[$type] ?? $typeConfig['danger'];
 <div x-data="{ open: false, actionUrl: '', init() { window['openModal_{{ $name }}'] = (url) => { this.actionUrl = url; this.open = true; } } }"
      x-cloak>
     <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="flex items-end sm:items-center justify-center min-h-screen px-3 py-3 sm:p-6 text-center">
             <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="open = false" class="fixed inset-0 bg-black/40 transition-opacity"></div>
-            <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative bg-white rounded-xl shadow-xl border border-gray-100 p-6 w-full max-w-md sm:mx-auto text-left">
+            <div x-show="open" @keydown.escape.window="open=false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative max-h-[calc(100dvh-1.5rem)] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6 w-full max-w-md sm:mx-auto text-left break-anywhere">
                 <div class="flex items-start gap-4">
                     <div class="w-10 h-10 rounded-full {{ $config['iconBg'] }} flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5 {{ $config['iconColor'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,12 +26,12 @@ $config = $typeConfig[$type] ?? $typeConfig['danger'];
                         <div class="mt-1 text-sm text-gray-500">{{ $slot }}</div>
                     </div>
                 </div>
-                <div class="mt-6 flex items-center justify-end gap-3">
-                    <button @click="open = false" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-                    <form :action="actionUrl" method="POST" class="inline">
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+                    <button @click="open = false" type="button" class="min-h-11 w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                    <form :action="actionUrl" method="POST" class="w-full sm:w-auto">
                         @csrf
                         @method($method)
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-all {{ $config['buttonBg'] }}">
+                        <button type="submit" class="min-h-11 w-full sm:w-auto px-4 py-2 text-sm font-medium text-white rounded-lg transition-all {{ $config['buttonBg'] }}">
                             {{ $confirmText }}
                         </button>
                     </form>

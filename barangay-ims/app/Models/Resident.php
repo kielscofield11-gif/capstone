@@ -24,6 +24,7 @@ class Resident extends Model
         'blood_type',
         'phone',
         'email',
+        'photo_path',
         'purok',
         'street_address',
         'is_voter',

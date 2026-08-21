@@ -36,4 +36,9 @@ class AuditLog extends Model
         }
         return $query;
     }
+
+    public function getModuleLabelAttribute(): string
+    {
+        return class_basename($this->model_type);
+    }
 }

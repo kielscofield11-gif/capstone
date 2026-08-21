@@ -54,6 +54,15 @@
         @media print { .no-print { display: none !important; } body { background: white !important; } }
         .toast-enter { animation: slideUp 0.3s ease-out; }
         .toast-exit { animation: fadeIn 0.2s ease-out reverse; }
+        .responsive-table { overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+        .responsive-table table { min-width: 38rem; }
+        .break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
+        :focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+        @media (max-width: 639px) {
+            .responsive-table { margin-inline: -1px; }
+            .responsive-table td a[aria-label], .responsive-table td button[aria-label] { min-width: 2.75rem; min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
+            input, select, textarea { font-size: 16px !important; }
+        }
     </style>
     @stack('styles')
 </head>
@@ -69,7 +78,7 @@
             <div class="flex-1 flex flex-col min-w-0">
                 @include('partials.header')
 
-                <main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8">
+                <main id="main-content" tabindex="-1" class="flex-1 min-w-0 overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
                     @if(session('success'))
                         <x-toast type="success" :message="session('success')" />
                     @endif
@@ -86,7 +95,7 @@
                     @yield('content')
                 </main>
 
-                <footer class="bg-white border-t px-6 py-3 text-sm text-gray-400 no-print">
+                <footer class="bg-white border-t px-4 md:px-6 py-3 text-xs sm:text-sm text-gray-400 no-print break-anywhere">
                     &copy; {{ date('Y') }} Barangay Concepcion Information Management System. All rights reserved.
                 </footer>
             </div>

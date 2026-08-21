@@ -1,4 +1,4 @@
-<aside class="fixed inset-y-0 left-0 z-30 w-64 bg-brand-900 text-white flex-shrink-0 sidebar-transition md:translate-x-0 md:static md:inset-auto"
+<aside id="main-navigation" class="fixed inset-y-0 left-0 z-30 w-[min(18rem,85vw)] md:w-64 bg-brand-900 text-white flex-shrink-0 sidebar-transition md:translate-x-0 md:static md:inset-auto"
        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
        role="navigation" aria-label="Main navigation">
     <div class="flex items-center gap-3 p-5 border-b border-brand-800">
@@ -9,7 +9,7 @@
         </div>
     </div>
 
-    <nav class="p-3 space-y-1 overflow-y-auto" style="max-height: calc(100vh - 5rem);">
+    <nav class="p-3 space-y-1 overflow-y-auto overscroll-contain" style="max-height: calc(100dvh - 5rem);">
         <x-sidebar-link :route="'dashboard'" :icon="'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'" :label="'Dashboard'"/>
 
         <div class="pt-3 pb-1">
@@ -33,16 +33,17 @@
 
         <x-sidebar-link :route="'reports.*'" :icon="'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'" :label="'Reports'"/>
 
-        @if(auth()->user()?->role === 'admin')
+        @can('viewAny', \App\Models\User::class)
             <div class="pt-3 pb-1">
                 <p class="px-3 text-xs font-semibold uppercase tracking-wider text-brand-400">Administration</p>
             </div>
             <x-sidebar-link :route="'users.*'" :icon="'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'" :label="'User Management'"/>
             <x-sidebar-link :route="'audit-logs.*'" :icon="'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'" :label="'Audit Logs'"/>
-        @endif
+            <x-sidebar-link :route="'document-templates.*'" :icon="'M9 12h6m-6 4h6M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z'" :label="'Document Templates'"/>
+        @endcan
     </nav>
 
-    <button @click="sidebarOpen = false" class="absolute top-3 right-3 p-1.5 rounded-lg text-brand-400 hover:text-white hover:bg-brand-800 md:hidden" aria-label="Close sidebar">
+    <button @click="sidebarOpen = false" class="absolute top-3 right-3 min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg text-brand-300 hover:text-white hover:bg-brand-800 md:hidden" aria-label="Close sidebar">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 </aside>

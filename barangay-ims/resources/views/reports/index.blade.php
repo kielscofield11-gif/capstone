@@ -4,6 +4,7 @@
 @section('header', 'Reports')
 
 @section('content')
+<div class="mb-5 flex justify-end"><a href="{{ route('exports.households.excel') }}" class="inline-flex text-sm bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700">Export Households Excel</a></div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <a href="{{ route('reports.residents') }}" class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-brand-200 transition-all">
         <div class="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">

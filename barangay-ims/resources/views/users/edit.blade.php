@@ -10,8 +10,9 @@
         <x-input-field name="name" label="Name" :required="true" value="{{ old('name', $user->name) }}" />
         <x-input-field name="email" label="Email" type="email" :required="true" value="{{ old('email', $user->email) }}" />
         <x-input-field name="password" label="New Password" type="password" placeholder="Leave blank to keep current" />
+        <p class="text-xs text-gray-500 -mt-3">If changed: at least 10 characters with upper and lower case letters, a number, and a symbol.</p>
         <x-input-field name="password_confirmation" label="Confirm Password" type="password" />
-        <x-input-field name="role" label="Role" type="select" :required="true" value="{{ old('role', $user->role) }}" :options="['staff' => 'Staff', 'secretary' => 'Secretary', 'kagawad' => 'Kagawad', 'admin' => 'Admin']" />
+        <x-input-field name="role" label="Role" type="select" :required="true" value="{{ old('role', $user->role) }}" :options="['staff' => 'Staff', 'kagawad' => 'Kagawad', 'secretary' => 'Secretary', 'captain' => 'Barangay Captain', 'admin' => 'Administrator']" />
         <div class="flex items-center gap-3">
             <label class="relative inline-flex items-center cursor-pointer">
                 <input type="hidden" name="is_active" value="0">
@@ -20,7 +21,7 @@
             </label>
             <span class="text-sm font-medium text-gray-700">Active</span>
         </div>
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('users.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium bg-brand-800 text-white rounded-lg hover:bg-brand-900 focus:ring-4 focus:ring-brand-200 transition-all">Update User</button>
         </div>

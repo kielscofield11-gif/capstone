@@ -2,4 +2,4 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-// Schedule::command('inspire')->hourly();
+Schedule::command('reminders:generate')->dailyAt('07:00')->withoutOverlapping();

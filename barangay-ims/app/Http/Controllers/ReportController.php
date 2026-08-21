@@ -7,16 +7,19 @@ use App\Models\DocumentRequest;
 use App\Models\Resident;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class ReportController extends Controller
 {
     public function index()
     {
+        Gate::authorize('view-reports');
         return view('reports.index');
     }
 
     public function residents(Request $request)
     {
+        Gate::authorize('view-reports');
         $request->validate([
             'age_from' => 'nullable|integer|min:0|max:150',
             'age_to' => 'nullable|integer|min:0|max:150',
@@ -68,6 +71,7 @@ class ReportController extends Controller
 
     public function blotters(Request $request)
     {
+        Gate::authorize('view-reports');
         $query = Blotter::with(['complainant', 'respondent']);
 
         if ($request->filled('status')) {
@@ -106,6 +110,7 @@ class ReportController extends Controller
 
     public function documents(Request $request)
     {
+        Gate::authorize('view-reports');
         $query = DocumentRequest::with(['resident', 'documentType']);
 
         if ($request->filled('status')) {

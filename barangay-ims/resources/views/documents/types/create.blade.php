@@ -9,6 +9,8 @@
         @csrf
         <x-input-field name="name" label="Name" :required="true" placeholder="Barangay Clearance" value="{{ old('name') }}" />
         <x-input-field name="description" label="Description" type="textarea" placeholder="Description of this document type..." value="{{ old('description') }}" />
+        <x-input-field name="requirements" label="Requirements (one per line)" type="textarea" placeholder="Valid ID&#10;Cedula&#10;Proof of Residency" value="{{ old('requirements') }}" />
+        <x-input-field name="processing_days" label="Estimated Processing Days" type="number" placeholder="3" value="{{ old('processing_days') }}" />
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fee Amount <span class="text-red-500">*</span></label>
             <div class="relative">
@@ -18,7 +20,7 @@
             </div>
             @error('fee_amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('document-types.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium bg-brand-800 text-white rounded-lg hover:bg-brand-900 focus:ring-4 focus:ring-brand-200 transition-all">Save</button>
         </div>

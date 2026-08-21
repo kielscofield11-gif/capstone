@@ -39,8 +39,8 @@ class ExampleTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'New Staff',
             'email' => 'staff@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'ValidPass1!',
+            'password_confirmation' => 'ValidPass1!',
         ]);
 
         $response->assertRedirect('/login');
