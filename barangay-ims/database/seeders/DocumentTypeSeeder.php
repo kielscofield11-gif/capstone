@@ -20,7 +20,10 @@ class DocumentTypeSeeder extends Seeder
         ];
 
         foreach ($types as $type) {
-            DocumentType::create($type);
+            DocumentType::updateOrCreate(
+                ['name' => $type['name']],
+                $type,
+            );
         }
     }
 }

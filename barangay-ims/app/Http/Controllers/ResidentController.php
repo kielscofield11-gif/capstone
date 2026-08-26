@@ -20,7 +20,7 @@ class ResidentController extends Controller
         $query = Resident::query();
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
                   ->orWhere('last_name', 'like', "%{$search}%")
@@ -30,15 +30,15 @@ class ResidentController extends Controller
         }
 
         if ($request->filled('purok')) {
-            $query->where('purok', $request->purok);
+            $query->where('purok', $request->input('purok'));
         }
 
         if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+            $query->where('gender', $request->input('gender'));
         }
 
         if ($request->filled('civil_status')) {
-            $query->where('civil_status', $request->civil_status);
+            $query->where('civil_status', $request->input('civil_status'));
         }
 
         if ($request->filled('senior')) {
@@ -54,7 +54,7 @@ class ResidentController extends Controller
         }
 
         if ($request->filled('household_id')) {
-            $query->where('household_id', $request->household_id);
+            $query->where('household_id', $request->input('household_id'));
         }
 
         $residents = $query->with('household')->latest()->paginate(15)->withQueryString();
@@ -97,36 +97,12 @@ class ResidentController extends Controller
             'is_4ps' => 'boolean',
             'household_id' => ['nullable', Rule::exists('households', 'id')->where('is_active', true)],
             'is_household_head' => 'boolean',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=100,min_height=100,max_width=5000,max_height=5000',
-            'duplicate_override' => 'sometimes|accepted',
         ]);
 
-        $photo = $validated['photo'] ?? null;
-        unset($validated['photo'], $validated['duplicate_override']);
-        $duplicates = app(ResidentDuplicateDetector::class)->findPotentialDuplicates($validated);
-        if ($duplicates->isNotEmpty() && !$request->boolean('duplicate_override')) {
-            return back()->withInput()->withErrors(['duplicate_override' => 'A possible duplicate resident was found. Review the matches and explicitly confirm before saving.'])
-                ->with('duplicate_candidates', $duplicates->load('household'));
-        }
-
-        if ($photo) {
-            $validated['photo_path'] = $photo->store('residents/photos', 'public');
-        }
-
         $validated['created_by'] = Auth::id();
-        try {
-            $resident = Resident::create($validated);
-        } catch (\Throwable $exception) {
-            if (!empty($validated['photo_path'])) Storage::disk('public')->delete($validated['photo_path']);
-            throw $exception;
-        }
+        $resident = Resident::create($validated);
 
-        $this->auditCreated($resident, "Created resident {$resident->full_name}");
-        if ($duplicates->isNotEmpty()) {
-            $this->auditEvent('resident_duplicate_override', $resident, "Duplicate warning overridden for resident {$resident->full_name}", null, [
-                'candidate_resident_ids' => $duplicates->pluck('id')->all(),
-            ]);
-        }
+        $this->logAudit('created', Resident::class, "Created resident {$resident->full_name}", $resident->id);
 
         return redirect()->route('residents.index')->with('success', 'Resident added successfully.');
     }
@@ -181,47 +157,11 @@ class ResidentController extends Controller
                 $query->where('is_active', true)->orWhere('id', $resident->household_id);
             })],
             'is_household_head' => 'boolean',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=100,min_height=100,max_width=5000,max_height=5000',
-            'remove_photo' => 'nullable|boolean',
-            'duplicate_override' => 'sometimes|accepted',
         ]);
 
-        $photo = $validated['photo'] ?? null;
-        $removePhoto = $request->boolean('remove_photo');
-        unset($validated['photo'], $validated['remove_photo'], $validated['duplicate_override']);
-        $duplicates = app(ResidentDuplicateDetector::class)->findPotentialDuplicates($validated, $resident->id);
-        if ($duplicates->isNotEmpty() && !$request->boolean('duplicate_override')) {
-            return back()->withInput()->withErrors(['duplicate_override' => 'A possible duplicate resident was found. Review the matches and explicitly confirm before saving.'])
-                ->with('duplicate_candidates', $duplicates->load('household'));
-        }
+        $resident->update($validated);
 
-        $oldPhoto = $resident->photo_path;
-        $newPhoto = $photo?->store('residents/photos', 'public');
-        if ($newPhoto) {
-            $validated['photo_path'] = $newPhoto;
-        } elseif ($removePhoto) {
-            $validated['photo_path'] = null;
-        }
-
-        $before = $this->auditSnapshot($resident);
-        try {
-            $resident->update($validated);
-        } catch (\Throwable $exception) {
-            if ($newPhoto) Storage::disk('public')->delete($newPhoto);
-            throw $exception;
-        }
-
-        if (($newPhoto || $removePhoto) && $oldPhoto && $oldPhoto !== $resident->photo_path) {
-            Storage::disk('public')->delete($oldPhoto);
-        }
-
-        $photoAction = $newPhoto ? ($oldPhoto ? 'photo_replaced' : 'photo_added') : ($removePhoto && $oldPhoto ? 'photo_removed' : 'updated');
-        $this->auditUpdated($resident, $before, "Updated resident {$resident->full_name}", $photoAction);
-        if ($duplicates->isNotEmpty()) {
-            $this->auditEvent('resident_duplicate_override', $resident, "Duplicate warning overridden while updating resident {$resident->full_name}", null, [
-                'candidate_resident_ids' => $duplicates->pluck('id')->all(),
-            ]);
-        }
+        $this->logAudit('updated', Resident::class, "Updated resident {$resident->full_name}", $resident->id);
 
         return redirect()->route('residents.index')->with('success', 'Resident updated successfully.');
     }
@@ -236,5 +176,26 @@ class ResidentController extends Controller
         $this->auditDeleted($resident, $before, "Soft-deleted resident {$name}");
 
         return redirect()->route('residents.index')->with('success', 'Resident deleted successfully.');
+    }
+
+    private function householdAlreadyHasHead(array $validated, ?int $exceptId = null): bool
+    {
+        if (!($validated['is_household_head'] ?? false) || empty($validated['household_id'])) {
+            return false;
+        }
+
+        return Resident::where('household_id', $validated['household_id'])
+            ->where('is_household_head', true)
+            ->when($exceptId, fn ($query) => $query->where('id', '<>', $exceptId))
+            ->exists();
+    }
+
+    private function normalizeBooleanFields(Request $request, array $validated): array
+    {
+        foreach (['is_voter', 'is_pwd', 'is_senior', 'is_4ps', 'is_household_head'] as $field) {
+            $validated[$field] = $request->boolean($field);
+        }
+
+        return $validated;
     }
 }

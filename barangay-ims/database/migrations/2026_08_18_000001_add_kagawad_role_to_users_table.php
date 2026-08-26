@@ -17,7 +17,9 @@ return new class extends Migration
     public function down(): void
     {
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE users MODIFY role ENUM('admin', 'secretary', 'staff') NOT NULL DEFAULT 'staff'");
+            // The base users migration already defines the role enum with
+            // kagawad, so restoring it here keeps the schema consistent.
+            DB::statement("ALTER TABLE users MODIFY role ENUM('admin', 'secretary', 'kagawad', 'staff') NOT NULL DEFAULT 'staff'");
         }
     }
 };

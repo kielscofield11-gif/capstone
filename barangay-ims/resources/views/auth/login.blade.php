@@ -4,12 +4,39 @@
 
 @push('styles')
 <style>
+    /* Keep the authentication screen usable when the Tailwind CDN is unavailable. */
+    .login-page, .login-page * { box-sizing: border-box; }
+    .login-page { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-x: hidden; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
     .login-bg {
-        background-image: url('/images/barangay.png');
+        background-color: #6b8eaf;
+        background-image: url('/images/barangay-bg.png?v=2');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
     }
+    .login-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0, 0, 0, .42), rgba(15, 31, 48, .48)); }
+    .login-shell { position: relative; z-index: 1; width: 100%; max-width: 28rem; }
+    .login-card { background: #fff; border-radius: 1rem; padding: 2rem; box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, .28); }
+    .login-logo { display: block; width: 4rem; height: 4rem; margin: 0 auto .75rem; object-fit: contain; }
+    .login-heading { margin: 0; color: #111827; text-align: center; font-size: 1.25rem; font-weight: 700; }
+    .login-subheading { margin: .25rem 0 1.5rem; color: #6b7280; text-align: center; font-size: .875rem; }
+    .login-card form > .mb-5 { margin-bottom: 1.25rem; }
+    .login-card label { display: block; margin-bottom: .25rem; color: #374151; font-size: .875rem; font-weight: 500; }
+    .login-card input:not([type="checkbox"]) { display: block; width: 100%; min-height: 2.75rem; padding: .625rem .75rem; border: 1px solid #d1d5db; border-radius: .75rem; background: #fff; color: #111827; font: inherit; font-size: .875rem; }
+    .login-card input:not([type="checkbox"]):focus { outline: 2px solid #93c5fd; outline-offset: 1px; border-color: #2563eb; }
+    .login-card .relative { position: relative; }
+    .login-card .relative button { position: absolute; right: .25rem; top: 50%; transform: translateY(-50%); padding: .5rem; border: 0; background: transparent; color: #9ca3af; cursor: pointer; }
+    .login-card .relative button:hover { color: #4b5563; }
+    .login-card input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: #1e3a5f; }
+    .login-card form > .flex { display: flex; align-items: center; margin-bottom: 1.5rem; }
+    .login-card form > .flex label { display: flex; align-items: center; gap: .5rem; margin: 0; cursor: pointer; }
+    .login-card button[type="submit"] { width: 100%; min-height: 2.75rem; border: 0; border-radius: .75rem; background: #1e3a5f; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    .login-card button[type="submit"]:hover { background: #172e46; }
+    .login-card form > div:last-child { margin-top: 1rem; text-align: center; color: #6b7280; font-size: .875rem; }
+    .login-card form > div:last-child a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    .login-card form > div:last-child a:hover { color: #1e3a5f; text-decoration: underline; }
+    .login-footer { margin-top: 1.5rem; color: #bfdbfe; text-align: center; font-size: .875rem; }
+    @media (max-width: 480px) { .login-page { align-items: flex-start; padding: 1rem .75rem; } .login-card { padding: 1.5rem 1.25rem; } }
 </style>
 @endpush
 
@@ -17,11 +44,11 @@
 <div class="min-h-screen flex items-center justify-center login-bg relative p-4">
     <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-brand-900/60"></div>
     <div class="w-full max-w-md relative animate-fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 animate-slide-up">
             <div class="text-center mb-6">
-                <img src="/images/logo.png" alt="Barangay Logo" class="w-16 h-16 mx-auto mb-3 object-contain">
-                <h1 class="text-xl font-bold text-gray-900">Barangay Concepcion</h1>
-                <p class="text-sm text-gray-500 mt-1">Sign in to your account</p>
+                <img src="/images/logo.png" alt="Barangay Logo" class="w-16 h-16 mx-auto mb-3 object-contain login-logo">
+                <h1 class="text-xl font-bold text-gray-900 login-heading">Barangay Concepcion</h1>
+                <p class="text-sm text-gray-500 mt-1 login-subheading">Sign in to your account</p>
             </div>
             @if(session('success'))
                 <div class="mb-5 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-start gap-3" role="status">
@@ -85,7 +112,7 @@
             </form>
         </div>
 
-        <p class="text-center mt-6 text-sm text-brand-300 animate-fade-in">
+        <p class="text-center mt-6 text-sm text-brand-300 animate-fade-in login-footer">
             &copy; {{ date('Y') }} Barangay Concepcion Information Management System
         </p>
     </div>

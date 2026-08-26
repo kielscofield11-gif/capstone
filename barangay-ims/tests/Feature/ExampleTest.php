@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Household;
+use App\Models\Resident;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +34,87 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'admin@barangay.gov', 'role' => 'admin', 'is_active' => true]);
         $this->assertDatabaseHas('users', ['email' => 'secretary@barangay.gov', 'role' => 'secretary']);
         $this->assertDatabaseHas('users', ['email' => 'kagawad@barangay.gov', 'role' => 'kagawad']);
+    }
+
+    public function test_database_seeder_can_be_run_more_than_once(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertDatabaseCount('users', 3);
+        $this->assertDatabaseCount('document_types', 7);
+    }
+
+    public function test_household_cannot_have_two_heads(): void
+    {
+        $user = User::create([
+            'name' => 'Secretary',
+            'email' => 'secretary@example.com',
+            'password' => bcrypt('password123'),
+            'role' => 'secretary',
+            'is_active' => true,
+        ]);
+        $household = Household::create(['household_number' => 'HH-001']);
+        Resident::create([
+            'first_name' => 'First',
+            'last_name' => 'Head',
+            'birth_date' => '1980-01-01',
+            'gender' => 'male',
+            'household_id' => $household->id,
+            'is_household_head' => true,
+        ]);
+
+        $this->actingAs($user)->post('/residents', [
+            'first_name' => 'Second',
+            'last_name' => 'Head',
+            'birth_date' => '1985-01-01',
+            'gender' => 'female',
+            'civil_status' => 'single',
+            'household_id' => $household->id,
+            'is_household_head' => '1',
+        ])->assertSessionHasErrors('is_household_head');
+
+        $this->assertDatabaseCount('residents', 1);
+    }
+
+    public function test_updating_a_resident_clears_unchecked_classifications(): void
+    {
+        $user = User::create([
+            'name' => 'Secretary',
+            'email' => 'secretary-update@example.com',
+            'password' => bcrypt('password123'),
+            'role' => 'secretary',
+            'is_active' => true,
+        ]);
+        $resident = Resident::create([
+            'first_name' => 'Juan',
+            'last_name' => 'Dela Cruz',
+            'birth_date' => '1980-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'is_voter' => true,
+            'is_pwd' => true,
+            'is_senior' => true,
+            'is_4ps' => true,
+            'is_household_head' => true,
+        ]);
+
+        $this->actingAs($user)->put("/residents/{$resident->id}", [
+            'first_name' => 'Juan',
+            'last_name' => 'Dela Cruz',
+            'birth_date' => '1980-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+        ])->assertRedirect('/residents');
+
+        $this->assertDatabaseHas('residents', [
+            'id' => $resident->id,
+            'is_voter' => false,
+            'is_pwd' => false,
+            'is_senior' => false,
+            'is_4ps' => false,
+            'is_household_head' => false,
+        ]);
     }
 
     public function test_self_registered_staff_is_inactive(): void
