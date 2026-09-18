@@ -58,10 +58,13 @@
         .responsive-table table { min-width: 38rem; }
         .break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
         :focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
-        @media (max-width: 639px) {
+        @media (max-width: 767px) {
             .responsive-table { margin-inline: -1px; }
             .responsive-table td a[aria-label], .responsive-table td button[aria-label] { min-width: 2.75rem; min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
             input, select, textarea { font-size: 16px !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
     </style>
     @stack('styles')
@@ -112,7 +115,7 @@
         @yield('content')
     @endguest
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script>
         document.addEventListener('submit', function(e) {
             const form = e.target;

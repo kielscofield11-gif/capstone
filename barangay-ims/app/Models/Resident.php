@@ -24,6 +24,9 @@ class Resident extends Model
         'blood_type',
         'phone',
         'email',
+        // Legacy: existing rows may have photo_path (shown read-only in
+        // residents.show). Create/edit no longer accept uploads by design
+        // to avoid public-disk storage growth; keep fillable for backfill.
         'photo_path',
         'purok',
         'street_address',

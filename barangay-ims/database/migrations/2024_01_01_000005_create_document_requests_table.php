@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('document_requests', function (Blueprint $table) {
             $table->id();
             $table->string('control_number')->unique();
-            $table->foreignId('resident_id')->constrained();
-            $table->foreignId('document_type_id')->constrained();
+            $table->foreignId('resident_id')->constrained()->restrictOnDelete();
+            $table->foreignId('document_type_id')->constrained()->restrictOnDelete();
             $table->text('purpose')->nullable();
             $table->text('remarks')->nullable();
             $table->enum('status', ['pending', 'approved', 'released', 'cancelled'])->default('pending');

@@ -12,6 +12,7 @@ class DashboardController extends Controller
 {
     public function index(ChartDataService $charts)
     {
+        $this->authorize('view-reports');
         $totalResidents = Resident::count();
         $totalHouseholds = Household::count();
         $totalBlotters = Blotter::count();

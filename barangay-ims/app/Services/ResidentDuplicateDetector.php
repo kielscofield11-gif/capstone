@@ -6,6 +6,10 @@ use App\Models\Resident;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
+/**
+ * Retained for future use (reports/backfill). Resident create/edit no longer
+ * block on duplicates by design; see ResidentController household-head guard.
+ */
 class ResidentDuplicateDetector
 {
     public function normalizeNamePart(?string $value): string

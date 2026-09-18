@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,6 +28,13 @@ class LoginController extends Controller
 
         if (Auth::attempt(array_merge($credentials, ['is_active' => true]), $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            try {
+                app(AuditLogger::class)->event('login', $request->user(), 'Signed in');
+            } catch (\Throwable) {
+                // Audit must never block authentication.
+            }
+
             return redirect()->intended('/dashboard');
         }
 
@@ -37,6 +45,16 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        $user = $request->user();
+
+        if ($user) {
+            try {
+                app(AuditLogger::class)->event('logout', $user, 'Signed out');
+            } catch (\Throwable) {
+                // Audit must never block logout.
+            }
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Support\PasswordPolicy;
 
 class RegisterController extends Controller
@@ -31,10 +31,16 @@ class RegisterController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
             'role' => 'staff',
             'is_active' => false,
         ]);
+
+        try {
+            app(AuditLogger::class)->event('registered', $user, "Self-registered account {$user->email} awaiting approval");
+        } catch (\Throwable) {
+            // Audit must never block registration.
+        }
 
         return redirect()->route('login')
             ->with('success', 'Registration submitted. Your account is awaiting admin approval before you can sign in.');

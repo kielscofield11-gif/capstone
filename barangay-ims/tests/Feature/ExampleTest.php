@@ -33,7 +33,9 @@ class ExampleTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => 'admin@barangay.gov', 'role' => 'admin', 'is_active' => true]);
         $this->assertDatabaseHas('users', ['email' => 'secretary@barangay.gov', 'role' => 'secretary']);
+        $this->assertDatabaseHas('users', ['email' => 'captain@barangay.gov', 'role' => 'captain']);
         $this->assertDatabaseHas('users', ['email' => 'kagawad@barangay.gov', 'role' => 'kagawad']);
+        $this->assertDatabaseHas('users', ['email' => 'staff@barangay.gov', 'role' => 'staff']);
     }
 
     public function test_database_seeder_can_be_run_more_than_once(): void
@@ -41,7 +43,7 @@ class ExampleTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertDatabaseCount('users', 3);
+        $this->assertDatabaseCount('users', 5);
         $this->assertDatabaseCount('document_types', 7);
     }
 

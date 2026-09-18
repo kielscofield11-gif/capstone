@@ -5,16 +5,8 @@
 
 @section('content')
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 max-w-3xl mx-auto">
-    <form method="POST" action="{{ route('residents.store') }}" enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
+    <form method="POST" action="{{ route('residents.store') }}" class="p-6 md:p-8 space-y-8">
         @csrf
-        @if(session('duplicate_candidates'))
-        <div role="alert" class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 break-anywhere">
-            <p class="font-semibold">Possible duplicate resident found</p>
-            @foreach(session('duplicate_candidates') as $candidate)<p class="mt-1"><a class="underline" href="{{ route('residents.show', $candidate) }}">{{ $candidate->full_name }}</a> — {{ $candidate->birth_date->format('M d, Y') }}{{ $candidate->household ? ' — '.$candidate->household->household_number : '' }}</p>@endforeach
-            <label class="mt-3 flex min-h-11 items-center gap-3 rounded-lg p-2 font-medium"><input type="checkbox" name="duplicate_override" value="1" class="w-5 h-5"> Continue anyway — I confirm this is a different person.</label>
-        </div>
-        @endif
-
         <div>
             <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
                 <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -85,6 +77,8 @@
                         @endforeach
                     </select>
                     <div id="household-context" class="mt-2 text-xs text-gray-600"></div>
+                    @error('household_id')<p role="alert" class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    @error('is_household_head')<p role="alert" class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Classification</label>
@@ -111,8 +105,6 @@
                 </div>
             </div>
         </div>
-
-        <div x-data="{ preview: null }"><label for="photo" class="block text-sm font-medium text-gray-700 mb-1">Resident Photo</label><input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" @change="preview && URL.revokeObjectURL(preview); preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null" class="block min-h-11 w-full max-w-full text-sm text-gray-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:text-brand-800"><img x-show="preview" :src="preview" alt="Selected resident photo preview" class="mt-3 h-40 w-40 max-w-full rounded-xl border object-cover" x-cloak><p class="mt-1 text-xs text-gray-500">Choose from camera or gallery. JPEG, PNG, or WebP; maximum 2 MB.</p>@error('photo')<p role="alert" class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror</div>
 
         <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-gray-100 [&>*]:w-full sm:[&>*]:w-auto [&>*]:min-h-11">
             <a href="{{ route('residents.index') }}" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</a>

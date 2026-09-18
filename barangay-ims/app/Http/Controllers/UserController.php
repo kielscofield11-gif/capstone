@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Traits\LogsAudit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Support\PasswordPolicy;
 use Illuminate\Validation\Rule;
 
@@ -35,7 +34,6 @@ class UserController extends Controller
             'role' => ['required', Rule::in(User::ROLES)],
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
         $user = User::create($validated);
 
         $this->auditCreated($user, "Created user account {$user->name}");
@@ -61,6 +59,14 @@ class UserController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
 
+        if ($user->id === $request->user()->id && !$validated['is_active']) {
+            return back()->with('error', 'You cannot deactivate your own account while signed in.');
+        }
+
+        if ($user->id === $request->user()->id && $validated['role'] !== $user->role) {
+            return back()->with('error', 'You cannot change your own role. Ask another administrator to do it.');
+        }
+
         if ($user->isAdmin()
             && User::where('role', User::ROLE_ADMIN)->count() <= 1
             && ($validated['role'] !== User::ROLE_ADMIN || !$validated['is_active'])) {
@@ -69,7 +75,7 @@ class UserController extends Controller
 
         if ($request->filled('password')) {
             $request->validate(['password' => ['string', 'confirmed', PasswordPolicy::rule()]]);
-            $validated['password'] = Hash::make($request->password);
+            $validated['password'] = $request->password;
         }
 
         $before = $this->auditSnapshot($user);
@@ -90,6 +96,10 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $this->authorize('delete', $user);
+        if ($user->id === request()->user()->id) {
+            return back()->with('error', 'You cannot delete your own account while signed in.');
+        }
+
         if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
             return back()->with('error', 'Cannot delete the last admin account.');
         }

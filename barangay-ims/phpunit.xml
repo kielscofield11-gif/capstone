@@ -31,6 +31,8 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="SEED_ADMIN_PASSWORD" value="test-admin-password"/>
         <env name="SEED_SECRETARY_PASSWORD" value="test-secretary-password"/>
+        <env name="SEED_CAPTAIN_PASSWORD" value="test-captain-password"/>
         <env name="SEED_KAGAWAD_PASSWORD" value="test-kagawad-password"/>
+        <env name="SEED_STAFF_PASSWORD" value="test-staff-password"/>
     </php>
 </phpunit>

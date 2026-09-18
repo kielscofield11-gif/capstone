@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Household;
 use App\Models\Resident;
 use App\Traits\LogsAudit;
-use App\Services\ResidentDuplicateDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ResidentController extends Controller
@@ -98,11 +96,18 @@ class ResidentController extends Controller
             'household_id' => ['nullable', Rule::exists('households', 'id')->where('is_active', true)],
             'is_household_head' => 'boolean',
         ]);
+        $validated = $this->normalizeBooleanFields($request, $validated);
+
+        if ($this->householdAlreadyHasHead($validated)) {
+            return back()->withInput()->withErrors([
+                'is_household_head' => 'This household already has a head. Unassign the current head first.',
+            ]);
+        }
 
         $validated['created_by'] = Auth::id();
         $resident = Resident::create($validated);
 
-        $this->logAudit('created', Resident::class, "Created resident {$resident->full_name}", $resident->id);
+        $this->auditCreated($resident, "Created resident {$resident->full_name}");
 
         return redirect()->route('residents.index')->with('success', 'Resident added successfully.');
     }
@@ -158,10 +163,18 @@ class ResidentController extends Controller
             })],
             'is_household_head' => 'boolean',
         ]);
+        $validated = $this->normalizeBooleanFields($request, $validated);
 
+        if ($this->householdAlreadyHasHead($validated, $resident->id)) {
+            return back()->withInput()->withErrors([
+                'is_household_head' => 'This household already has a head. Unassign the current head first.',
+            ]);
+        }
+
+        $before = $this->auditSnapshot($resident);
         $resident->update($validated);
 
-        $this->logAudit('updated', Resident::class, "Updated resident {$resident->full_name}", $resident->id);
+        $this->auditUpdated($resident, $before, "Updated resident {$resident->full_name}");
 
         return redirect()->route('residents.index')->with('success', 'Resident updated successfully.');
     }
