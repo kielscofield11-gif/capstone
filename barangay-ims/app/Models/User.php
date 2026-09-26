@@ -65,7 +65,7 @@ class User extends Authenticatable
 
     public function isKagawad(): bool
     {
-        return $this->role === 'kagawad';
+        return $this->role === self::ROLE_KAGAWAD;
     }
 
     public function isCaptain(): bool
@@ -75,7 +75,7 @@ class User extends Authenticatable
 
     public function isSecretary(): bool
     {
-        return $this->role === 'secretary';
+        return $this->role === self::ROLE_SECRETARY;
     }
 
     public function getRoleLabelAttribute(): string

@@ -20,27 +20,29 @@ class ReportController extends Controller
     public function residents(Request $request)
     {
         Gate::authorize('view-reports');
-        $request->validate([
+        $filters = $request->validate([
+            'purok' => 'nullable|string|max:100',
+            'gender' => 'nullable|in:male,female,other',
             'age_from' => 'nullable|integer|min:0|max:150',
             'age_to' => 'nullable|integer|min:0|max:150',
         ]);
 
         $query = Resident::query();
 
-        if ($request->filled('purok')) {
-            $query->where('purok', $request->purok);
+        if (! empty($filters['purok'])) {
+            $query->where('purok', $filters['purok']);
         }
 
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+        if (! empty($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
         }
 
-        if ($request->filled('age_from')) {
-            $query->whereDate('birth_date', '<=', now()->subYears($request->age_from));
+        if (isset($filters['age_from'])) {
+            $query->whereDate('birth_date', '<=', now()->subYears((int) $filters['age_from']));
         }
 
-        if ($request->filled('age_to')) {
-            $query->whereDate('birth_date', '>', now()->subYears($request->age_to + 1));
+        if (isset($filters['age_to'])) {
+            $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
         }
 
         $residents = $query->with('household')->get();
@@ -72,22 +74,28 @@ class ReportController extends Controller
     public function blotters(Request $request)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,hearing,resolved,dismissed',
+            'incident_type' => 'nullable|string|max:255',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = Blotter::with(['complainant', 'respondent']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
         }
 
-        if ($request->filled('incident_type')) {
-            $query->where('incident_type', $request->incident_type);
+        if (! empty($filters['incident_type'])) {
+            $query->where('incident_type', $filters['incident_type']);
         }
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('incident_date', '>=', $request->date_from);
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('incident_date', '>=', $filters['date_from']);
         }
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('incident_date', '<=', $request->date_to);
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('incident_date', '<=', $filters['date_to']);
         }
 
         $blotters = $query->get();
@@ -111,22 +119,28 @@ class ReportController extends Controller
     public function documents(Request $request)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,approved,released,cancelled',
+            'document_type_id' => 'nullable|integer|exists:document_types,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = DocumentRequest::with(['resident', 'documentType']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
         }
 
-        if ($request->filled('document_type_id')) {
-            $query->where('document_type_id', $request->document_type_id);
+        if (! empty($filters['document_type_id'])) {
+            $query->where('document_type_id', $filters['document_type_id']);
         }
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
         }
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
         $documents = $query->get();

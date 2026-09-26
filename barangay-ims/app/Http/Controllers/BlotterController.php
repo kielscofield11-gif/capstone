@@ -16,10 +16,17 @@ class BlotterController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Blotter::class);
+
+        $request->validate([
+            'status' => 'nullable|in:pending,hearing,resolved,dismissed',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
         $query = Blotter::with(['complainant', 'respondent']);
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('blotter_number', 'like', "%{$search}%")
                   ->orWhere('incident_type', 'like', "%{$search}%")
@@ -52,7 +59,7 @@ class BlotterController extends Controller
     public function create()
     {
         $this->authorize('create', Blotter::class);
-        $residents = Resident::orderBy('last_name')->get();
+        $residents = Resident::select('id', 'first_name', 'middle_name', 'last_name', 'suffix')->orderBy('last_name')->orderBy('first_name')->limit(2000)->get();
         return view('blotters.create', compact('residents'));
     }
 
@@ -63,12 +70,12 @@ class BlotterController extends Controller
             'complainant_id' => 'required|exists:residents,id|different:respondent_id',
             'respondent_id' => 'required|exists:residents,id|different:complainant_id',
             'incident_type' => 'required|string|max:255',
-            'incident_date' => 'required|date',
+            'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'nullable|string|max:255',
-            'details' => 'required|string',
-            'status' => 'required|in:pending,hearing,resolved,dismissed',
-            'hearing_date' => 'nullable|date|after_or_equal:incident_date',
-            'resolution' => 'nullable|string',
+            'details' => 'required|string|max:10000',
+            'status' => 'required|in:pending,hearing',
+            'hearing_date' => 'nullable|date|after_or_equal:incident_date|required_if:status,hearing',
+            'resolution' => 'nullable|string|max:10000',
         ]);
 
         $blotter = DB::transaction(function () use ($validated) {
@@ -78,9 +85,6 @@ class BlotterController extends Controller
                 fn () => $this->historicalMaximum(Blotter::query()->whereYear('created_at', $year)->pluck('blotter_number'), 'B', $year)
             );
             $validated['created_by'] = Auth::id();
-            if (in_array($validated['status'], ['resolved', 'dismissed'])) {
-                $validated['resolved_by'] = Auth::id();
-            }
             return Blotter::create($validated);
         });
 
@@ -99,23 +103,33 @@ class BlotterController extends Controller
     public function edit(Blotter $blotter)
     {
         $this->authorize('update', $blotter);
-        $residents = Resident::orderBy('last_name')->get();
+
+        if (in_array($blotter->status, ['resolved', 'dismissed'], true)) {
+            return redirect()->route('blotters.show', $blotter)->with('error', 'Resolved or dismissed blotters cannot be edited.');
+        }
+
+        $residents = Resident::select('id', 'first_name', 'middle_name', 'last_name', 'suffix')->orderBy('last_name')->orderBy('first_name')->limit(2000)->get();
         return view('blotters.edit', compact('blotter', 'residents'));
     }
 
     public function update(Request $request, Blotter $blotter)
     {
         $this->authorize('update', $blotter);
+
+        if (in_array($blotter->status, ['resolved', 'dismissed'], true)) {
+            return back()->with('error', 'Resolved or dismissed blotters cannot be edited.');
+        }
+
         $validated = $request->validate([
             'complainant_id' => 'required|exists:residents,id|different:respondent_id',
             'respondent_id' => 'required|exists:residents,id|different:complainant_id',
             'incident_type' => 'required|string|max:255',
-            'incident_date' => 'required|date',
+            'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'nullable|string|max:255',
-            'details' => 'required|string',
+            'details' => 'required|string|max:10000',
             'status' => 'required|in:pending,hearing,resolved,dismissed',
-            'hearing_date' => 'nullable|date|after_or_equal:incident_date',
-            'resolution' => 'nullable|string',
+            'hearing_date' => 'nullable|date|after_or_equal:incident_date|required_if:status,hearing',
+            'resolution' => 'nullable|string|max:10000|required_if:status,resolved,dismissed',
         ]);
 
         if (in_array($validated['status'], ['resolved', 'dismissed'])) {
@@ -135,6 +149,11 @@ class BlotterController extends Controller
     public function destroy(Blotter $blotter)
     {
         $this->authorize('delete', $blotter);
+
+        if (in_array($blotter->status, ['resolved', 'dismissed'], true)) {
+            return back()->with('error', 'Resolved or dismissed blotters cannot be deleted to preserve history.');
+        }
+
         $number = $blotter->blotter_number;
         $before = $this->auditSnapshot($blotter);
         $blotter->delete();

@@ -19,10 +19,18 @@ class DocumentController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', DocumentRequest::class);
+
+        $request->validate([
+            'status' => 'nullable|in:pending,approved,released,cancelled',
+            'document_type_id' => 'nullable|integer|exists:document_types,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
         $query = DocumentRequest::with(['resident', 'documentType', 'requestedBy']);
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('control_number', 'like', "%{$search}%")
                   ->orWhereHas('resident', function ($r) use ($search) {
@@ -57,7 +65,7 @@ class DocumentController extends Controller
     public function create()
     {
         $this->authorize('create', DocumentRequest::class);
-        $residents = Resident::orderBy('last_name')->get();
+        $residents = Resident::select('id', 'first_name', 'middle_name', 'last_name', 'suffix')->orderBy('last_name')->orderBy('first_name')->limit(2000)->get();
         $documentTypes = DocumentType::where('is_active', true)->get();
         return view('documents.create', compact('residents', 'documentTypes'));
     }
@@ -68,9 +76,9 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'resident_id' => 'required|exists:residents,id',
             'document_type_id' => ['required', Rule::exists('document_types', 'id')->where('is_active', true)],
-            'purpose' => 'nullable|string',
-            'remarks' => 'nullable|string',
-            'fee_amount' => 'nullable|numeric|min:0',
+            'purpose' => 'nullable|string|max:2000',
+            'remarks' => 'nullable|string|max:2000',
+            'fee_amount' => 'nullable|numeric|min:0|max:9999999.99|decimal:0,2',
         ]);
 
         $documentType = DocumentType::findOrFail($validated['document_type_id']);
@@ -101,7 +109,12 @@ class DocumentController extends Controller
     public function edit(DocumentRequest $document)
     {
         $this->authorize('update', $document);
-        $residents = Resident::orderBy('last_name')->get();
+
+        if ($document->status !== 'pending') {
+            return redirect()->route('documents.show', $document)->with('error', 'Only pending documents can be edited.');
+        }
+
+        $residents = Resident::select('id', 'first_name', 'middle_name', 'last_name', 'suffix')->orderBy('last_name')->orderBy('first_name')->limit(2000)->get();
         $documentTypes = DocumentType::where('is_active', true)
             ->when(!$document->documentType?->is_active, fn ($query) => $query->orWhere('id', $document->document_type_id))
             ->get();
@@ -111,14 +124,19 @@ class DocumentController extends Controller
     public function update(Request $request, DocumentRequest $document)
     {
         $this->authorize('update', $document);
+
+        if ($document->status !== 'pending') {
+            return back()->with('error', 'Only pending documents can be edited.');
+        }
+
         $validated = $request->validate([
             'resident_id' => 'required|exists:residents,id',
             'document_type_id' => ['required', Rule::exists('document_types', 'id')->where(function ($query) use ($document) {
                 $query->where('is_active', true)->orWhere('id', $document->document_type_id);
             })],
-            'purpose' => 'nullable|string',
-            'remarks' => 'nullable|string',
-            'fee_amount' => 'nullable|numeric|min:0',
+            'purpose' => 'nullable|string|max:2000',
+            'remarks' => 'nullable|string|max:2000',
+            'fee_amount' => 'nullable|numeric|min:0|max:9999999.99|decimal:0,2',
         ]);
 
         $before = $this->auditSnapshot($document);
@@ -132,6 +150,11 @@ class DocumentController extends Controller
     public function destroy(DocumentRequest $document)
     {
         $this->authorize('delete', $document);
+
+        if (in_array($document->status, ['approved', 'released'], true)) {
+            return back()->with('error', 'Approved or released documents cannot be deleted to preserve history.');
+        }
+
         $number = $document->control_number;
         $before = $this->auditSnapshot($document);
         $document->delete();
@@ -193,7 +216,7 @@ class DocumentController extends Controller
         }
 
         $before = $this->auditSnapshot($document);
-        $document->update(['status' => 'cancelled']);
+        $document->update(['status' => 'cancelled', 'approved_by' => null, 'approved_date' => null]);
         $this->auditUpdated($document, $before, "Cancelled document request {$document->control_number}", 'cancelled');
         return back()->with('success', 'Document request cancelled.');
     }

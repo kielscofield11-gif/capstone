@@ -60,9 +60,13 @@
                     {{ substr($blotter->complainant->full_name ?? 'NA', 0, 2) }}
                 </div>
                 <div>
+                    @if($blotter->complainant)
                     <a href="{{ route('residents.show', $blotter->complainant) }}" class="text-sm font-medium text-gray-900 hover:text-brand-700">
-                        {{ $blotter->complainant->full_name ?? 'N/A' }}
+                        {{ $blotter->complainant->full_name }}
                     </a>
+                    @else
+                    <span class="text-sm font-medium text-gray-500">Archived resident</span>
+                    @endif
                     <p class="text-xs text-gray-400">{{ $blotter->complainant->purok ?? 'No purok' }}</p>
                 </div>
             </div>
@@ -75,9 +79,13 @@
                     {{ substr($blotter->respondent->full_name ?? 'NA', 0, 2) }}
                 </div>
                 <div>
+                    @if($blotter->respondent)
                     <a href="{{ route('residents.show', $blotter->respondent) }}" class="text-sm font-medium text-gray-900 hover:text-brand-700">
-                        {{ $blotter->respondent->full_name ?? 'N/A' }}
+                        {{ $blotter->respondent->full_name }}
                     </a>
+                    @else
+                    <span class="text-sm font-medium text-gray-500">Archived resident</span>
+                    @endif
                     <p class="text-xs text-gray-400">{{ $blotter->respondent->purok ?? 'No purok' }}</p>
                 </div>
             </div>

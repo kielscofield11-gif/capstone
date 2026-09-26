@@ -14,10 +14,15 @@ class HouseholdController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Household::class);
+
+        $request->validate([
+            'purok' => 'nullable|string|max:100',
+        ]);
+
         $query = Household::withCount('residents');
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('household_number', 'like', "%{$search}%")
                   ->orWhere('purok', 'like', "%{$search}%")
@@ -81,10 +86,14 @@ class HouseholdController extends Controller
             'household_number' => 'required|string|max:50|unique:households,household_number,' . $household->id,
             'purok' => 'nullable|string|max:100',
             'street_address' => 'nullable|string|max:255',
-            'is_active' => 'boolean',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+
+        if (! $validated['is_active'] && $household->residents()->exists()) {
+            return back()->withInput()->with('error', 'Cannot deactivate household with active residents. Transfer residents first.');
+        }
 
         $before = $this->auditSnapshot($household);
         $household->update($validated);
@@ -97,15 +106,30 @@ class HouseholdController extends Controller
     public function destroy(Household $household)
     {
         $this->authorize('delete', $household);
-        if ($household->residents()->count() > 0) {
+
+        try {
+            $deleted = \Illuminate\Support\Facades\DB::transaction(function () use ($household) {
+                $household->lockForUpdate();
+
+                if ($household->residents()->exists()) {
+                    return false;
+                }
+
+                $number = $household->household_number;
+                $before = $this->auditSnapshot($household);
+                $household->delete();
+
+                $this->auditDeleted($household, $before, "Deleted household {$number}");
+
+                return true;
+            });
+        } catch (\Illuminate\Database\QueryException) {
             return back()->with('error', 'Cannot delete household with existing residents. Remove residents first.');
         }
 
-        $number = $household->household_number;
-        $before = $this->auditSnapshot($household);
-        $household->delete();
-
-        $this->auditDeleted($household, $before, "Deleted household {$number}");
+        if (! $deleted) {
+            return back()->with('error', 'Cannot delete household with existing residents. Remove residents first.');
+        }
 
         return redirect()->route('households.index')->with('success', 'Household deleted successfully.');
     }

@@ -19,6 +19,10 @@ class ReminderService
         $created = 0;
 
         DocumentRequest::query()->pending()->with(['resident', 'documentType'])->each(function (DocumentRequest $request) use ($recipients, $date, &$created) {
+            if ($request->created_at === null) {
+                return;
+            }
+
             $dueDate = $request->documentType?->processing_days !== null
                 ? $request->created_at->copy()->startOfDay()->addDays($request->documentType->processing_days)
                 : null;

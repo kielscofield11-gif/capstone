@@ -41,8 +41,8 @@
                                 {{ $blotter->blotter_number }}
                             </a>
                         </td>
-                        <td class="px-4 md:px-5 py-3 text-gray-600 break-anywhere">{{ $blotter->complainant->full_name ?? 'N/A' }}<span class="block mt-1 text-xs text-gray-400 lg:hidden">vs. {{ $blotter->respondent->full_name ?? 'N/A' }}@if($blotter->hearing_date) · Hearing {{ $blotter->hearing_date->format('M d') }}@endif</span></td>
-                        <td class="px-4 md:px-5 py-3 text-gray-600 hidden lg:table-cell">{{ $blotter->respondent->full_name ?? 'N/A' }}</td>
+                        <td class="px-4 md:px-5 py-3 text-gray-600 break-anywhere">{{ $blotter->complainant?->full_name ?? 'Archived' }}<span class="block mt-1 text-xs text-gray-400 lg:hidden">vs. {{ $blotter->respondent?->full_name ?? 'Archived' }}@if($blotter->hearing_date) · Hearing {{ $blotter->hearing_date->format('M d') }}@endif</span></td>
+                        <td class="px-4 md:px-5 py-3 text-gray-600 hidden lg:table-cell">{{ $blotter->respondent?->full_name ?? 'Archived' }}</td>
                         <td class="px-4 md:px-5 py-3 text-gray-600 hidden md:table-cell">{{ $blotter->incident_type }}</td>
                         <td class="px-4 md:px-5 py-3 text-gray-600 hidden sm:table-cell">{{ $blotter->incident_date->format('M d, Y') }}</td>
                         <td class="px-4 md:px-5 py-3">

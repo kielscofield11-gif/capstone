@@ -52,7 +52,8 @@ class Resident extends Model
     {
         $name = $this->last_name . ', ' . $this->first_name;
         if ($this->middle_name) {
-            $name .= ' ' . $this->middle_name[0] . '.';
+            $initial = mb_substr($this->middle_name, 0, 1, 'UTF-8');
+            $name .= ' ' . $initial . '.';
         }
         if ($this->suffix) {
             $name .= ' ' . $this->suffix;

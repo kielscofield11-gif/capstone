@@ -16,11 +16,17 @@ class ExportController extends Controller
     public function residentsExcel(Request $request, SpreadsheetExportService $excel)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'purok' => 'nullable|string|max:100',
+            'gender' => 'nullable|in:male,female,other',
+            'age_from' => 'nullable|integer|min:0|max:150',
+            'age_to' => 'nullable|integer|min:0|max:150',
+        ]);
         $query = Resident::with('household');
-        if ($request->filled('purok')) $query->where('purok', $request->purok);
-        if ($request->filled('gender')) $query->where('gender', $request->gender);
-        if ($request->filled('age_from')) $query->whereDate('birth_date', '<=', now()->subYears($request->integer('age_from')));
-        if ($request->filled('age_to')) $query->whereDate('birth_date', '>', now()->subYears($request->integer('age_to') + 1));
+        if (! empty($filters['purok'])) $query->where('purok', $filters['purok']);
+        if (! empty($filters['gender'])) $query->where('gender', $filters['gender']);
+        if (isset($filters['age_from'])) $query->whereDate('birth_date', '<=', now()->subYears((int) $filters['age_from']));
+        if (isset($filters['age_to'])) $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
         $rows = $query->orderBy('last_name')->get()->map(fn ($r) => [$r->id, $r->full_name, $r->birth_date?->format('Y-m-d'), ucfirst($r->gender), $r->purok, $r->street_address, $r->household?->household_number, $r->phone]);
         return $excel->download('Resident Report', ['ID', 'Name', 'Birth Date', 'Gender', 'Purok', 'Address', 'Household', 'Phone'], $rows, 'residents-report.xlsx');
     }
@@ -35,11 +41,17 @@ class ExportController extends Controller
     public function blottersExcel(Request $request, SpreadsheetExportService $excel)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,hearing,resolved,dismissed',
+            'incident_type' => 'nullable|string|max:255',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = Blotter::with(['complainant', 'respondent']);
-        if ($request->filled('status')) $query->where('status', $request->status);
-        if ($request->filled('incident_type')) $query->where('incident_type', $request->incident_type);
-        if ($request->filled('date_from')) $query->whereDate('incident_date', '>=', $request->date_from);
-        if ($request->filled('date_to')) $query->whereDate('incident_date', '<=', $request->date_to);
+        if (! empty($filters['status'])) $query->where('status', $filters['status']);
+        if (! empty($filters['incident_type'])) $query->where('incident_type', $filters['incident_type']);
+        if (! empty($filters['date_from'])) $query->whereDate('incident_date', '>=', $filters['date_from']);
+        if (! empty($filters['date_to'])) $query->whereDate('incident_date', '<=', $filters['date_to']);
         $rows = $query->orderBy('incident_date')->get()->map(fn ($b) => [$b->blotter_number, $b->incident_date?->format('Y-m-d'), $b->incident_type, $b->complainant?->full_name, $b->respondent?->full_name, ucfirst($b->status), $b->hearing_date?->format('Y-m-d'), $b->incident_location]);
         return $excel->download('Blotter Report', ['Number', 'Incident Date', 'Type', 'Complainant', 'Respondent', 'Status', 'Hearing Date', 'Location'], $rows, 'blotters-report.xlsx');
     }
@@ -47,11 +59,17 @@ class ExportController extends Controller
     public function documentsExcel(Request $request, SpreadsheetExportService $excel)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,approved,released,cancelled',
+            'document_type_id' => 'nullable|integer|exists:document_types,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = DocumentRequest::with(['resident', 'documentType']);
-        if ($request->filled('status')) $query->where('status', $request->status);
-        if ($request->filled('document_type_id')) $query->where('document_type_id', $request->document_type_id);
-        if ($request->filled('date_from')) $query->whereDate('created_at', '>=', $request->date_from);
-        if ($request->filled('date_to')) $query->whereDate('created_at', '<=', $request->date_to);
+        if (! empty($filters['status'])) $query->where('status', $filters['status']);
+        if (! empty($filters['document_type_id'])) $query->where('document_type_id', $filters['document_type_id']);
+        if (! empty($filters['date_from'])) $query->whereDate('created_at', '>=', $filters['date_from']);
+        if (! empty($filters['date_to'])) $query->whereDate('created_at', '<=', $filters['date_to']);
         $rows = $query->oldest()->get()->map(fn ($d) => [$d->control_number, $d->created_at?->format('Y-m-d'), $d->resident?->full_name, $d->documentType?->name, ucfirst($d->status), (float) $d->fee_amount, $d->purpose]);
         return $excel->download('Document Request Report', ['Control Number', 'Requested Date', 'Resident', 'Document Type', 'Status', 'Fee', 'Purpose'], $rows, 'documents-report.xlsx');
     }
@@ -59,19 +77,25 @@ class ExportController extends Controller
     public function residentsPdf(Request $request)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'purok' => 'nullable|string|max:100',
+            'gender' => 'nullable|in:male,female,other',
+            'age_from' => 'nullable|integer|min:0|max:150',
+            'age_to' => 'nullable|integer|min:0|max:150',
+        ]);
         $query = Resident::query();
 
-        if ($request->filled('purok')) {
-            $query->where('purok', $request->purok);
+        if (! empty($filters['purok'])) {
+            $query->where('purok', $filters['purok']);
         }
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+        if (! empty($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
         }
-        if ($request->filled('age_from')) {
-            $query->whereDate('birth_date', '<=', now()->subYears($request->age_from));
+        if (isset($filters['age_from'])) {
+            $query->whereDate('birth_date', '<=', now()->subYears((int) $filters['age_from']));
         }
-        if ($request->filled('age_to')) {
-            $query->whereDate('birth_date', '>', now()->subYears($request->age_to + 1));
+        if (isset($filters['age_to'])) {
+            $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
         }
 
         $residents = $query->with('household')->get();
@@ -84,19 +108,25 @@ class ExportController extends Controller
     public function blottersPdf(Request $request)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,hearing,resolved,dismissed',
+            'incident_type' => 'nullable|string|max:255',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = Blotter::with(['complainant', 'respondent']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
         }
-        if ($request->filled('incident_type')) {
-            $query->where('incident_type', $request->incident_type);
+        if (! empty($filters['incident_type'])) {
+            $query->where('incident_type', $filters['incident_type']);
         }
-        if ($request->filled('date_from')) {
-            $query->whereDate('incident_date', '>=', $request->date_from);
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('incident_date', '>=', $filters['date_from']);
         }
-        if ($request->filled('date_to')) {
-            $query->whereDate('incident_date', '<=', $request->date_to);
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('incident_date', '<=', $filters['date_to']);
         }
 
         $blotters = $query->get();
@@ -109,19 +139,25 @@ class ExportController extends Controller
     public function documentsPdf(Request $request)
     {
         Gate::authorize('view-reports');
+        $filters = $request->validate([
+            'status' => 'nullable|in:pending,approved,released,cancelled',
+            'document_type_id' => 'nullable|integer|exists:document_types,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
         $query = DocumentRequest::with(['resident', 'documentType']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
         }
-        if ($request->filled('document_type_id')) {
-            $query->where('document_type_id', $request->document_type_id);
+        if (! empty($filters['document_type_id'])) {
+            $query->where('document_type_id', $filters['document_type_id']);
         }
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
         }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
         $documents = $query->get();

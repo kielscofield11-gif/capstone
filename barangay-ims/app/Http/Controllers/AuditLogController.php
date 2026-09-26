@@ -14,6 +14,8 @@ class AuditLogController extends Controller
         Gate::authorize('view-audit-logs');
         $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'action' => ['nullable', 'string', 'max:100'],
+            'model_type' => ['nullable', 'string', 'max:255'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
@@ -21,12 +23,14 @@ class AuditLogController extends Controller
         $query = AuditLog::with('user');
 
         if ($request->filled('search')) {
-            $search = $request->string('search')->toString();
+            $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->string('search')->toString());
             $query->where(function ($builder) use ($search) {
                 $builder->where('description', 'like', "%{$search}%")
-                    ->orWhere('model_id', $search)
                     ->orWhereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"));
             });
+            if (is_numeric($search)) {
+                $query->orWhere('model_id', $search);
+            }
         }
 
         if ($request->filled('user_id')) {

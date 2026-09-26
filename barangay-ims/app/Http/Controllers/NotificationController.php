@@ -18,12 +18,36 @@ class NotificationController extends Controller
     {
         $item = $request->user()->notifications()->whereKey($notification)->firstOrFail();
         $item->markAsRead();
-        return redirect()->to($item->data['url'] ?? route('notifications.index'));
+
+        $url = $item->data['url'] ?? null;
+
+        if (is_string($url) && $url !== '' && $this->isInternalUrl($url)) {
+            return redirect()->to($url);
+        }
+
+        return redirect()->route('notifications.index');
     }
 
     public function readAll(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
         return back()->with('success', 'All notifications marked as read.');
+    }
+
+    private function isInternalUrl(string $url): bool
+    {
+        // Allow only relative URLs or absolute URLs on this app's host.
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return true;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || ! isset($parts['host'])) {
+            return false;
+        }
+
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+
+        return $appHost !== null && strtolower($parts['host']) === strtolower($appHost);
     }
 }

@@ -38,6 +38,14 @@ class Household extends Model
 
     public function getMemberCountAttribute(): int
     {
+        if ($this->relationLoaded('residents')) {
+            return $this->residents->count();
+        }
+
+        if (isset($this->attributes['residents_count'])) {
+            return (int) $this->attributes['residents_count'];
+        }
+
         return $this->residents()->count();
     }
 }

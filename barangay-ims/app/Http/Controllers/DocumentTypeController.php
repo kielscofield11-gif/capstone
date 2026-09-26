@@ -30,8 +30,11 @@ class DocumentTypeController extends Controller
             'description' => 'nullable|string',
             'requirements' => 'nullable|string|max:5000',
             'processing_days' => 'nullable|integer|min:0|max:365',
-            'fee_amount' => 'required|numeric|min:0',
+            'fee_amount' => 'required|numeric|min:0|max:9999999.99|decimal:0,2',
+            'is_active' => 'sometimes|boolean',
         ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
 
         $documentType = DocumentType::create($validated);
 
@@ -54,9 +57,11 @@ class DocumentTypeController extends Controller
             'description' => 'nullable|string',
             'requirements' => 'nullable|string|max:5000',
             'processing_days' => 'nullable|integer|min:0|max:365',
-            'fee_amount' => 'required|numeric|min:0',
-            'is_active' => 'boolean',
+            'fee_amount' => 'required|numeric|min:0|max:9999999.99|decimal:0,2',
+            'is_active' => 'sometimes|boolean',
         ]);
+
+        $validated['is_active'] = $request->boolean('is_active');
 
         $before = $this->auditSnapshot($documentType);
         $documentType->update($validated);
@@ -72,15 +77,30 @@ class DocumentTypeController extends Controller
     public function destroy(DocumentType $documentType)
     {
         $this->authorize('delete', $documentType);
-        if ($documentType->documentRequests()->count() > 0) {
+
+        try {
+            $deleted = \Illuminate\Support\Facades\DB::transaction(function () use ($documentType) {
+                $documentType->lockForUpdate();
+
+                if ($documentType->documentRequests()->exists()) {
+                    return false;
+                }
+
+                $name = $documentType->name;
+                $before = $this->auditSnapshot($documentType);
+                $documentType->delete();
+
+                $this->auditDeleted($documentType, $before, "Deleted document type {$name}");
+
+                return true;
+            });
+        } catch (\Illuminate\Database\QueryException) {
             return back()->with('error', 'Cannot delete document type with existing requests. Deactivate instead.');
         }
 
-        $name = $documentType->name;
-        $before = $this->auditSnapshot($documentType);
-        $documentType->delete();
-
-        $this->auditDeleted($documentType, $before, "Deleted document type {$name}");
+        if (! $deleted) {
+            return back()->with('error', 'Cannot delete document type with existing requests. Deactivate instead.');
+        }
 
         return redirect()->route('document-types.index')->with('success', 'Document type deleted successfully.');
     }

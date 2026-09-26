@@ -27,7 +27,7 @@ class SpreadsheetExportService
                 if (is_int($value) || is_float($value)) {
                     $sheet->setCellValue([$column + 1, $rowNumber], $value);
                 } else {
-                    $sheet->setCellValueExplicit([$column + 1, $rowNumber], (string) ($value ?? ''), DataType::TYPE_STRING);
+                    $sheet->setCellValueExplicit([$column + 1, $rowNumber], $this->sanitizeString((string) ($value ?? '')), DataType::TYPE_STRING);
                 }
             }
             $rowNumber++;
@@ -42,5 +42,17 @@ class SpreadsheetExportService
             (new Xlsx($book))->save('php://output');
             $book->disconnectWorksheets();
         }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    private function sanitizeString(string $value): string
+    {
+        // Neutralize spreadsheet formula injection. TYPE_STRING already forces
+        // text type, but prefixing prevents execution in viewers that evaluate
+        // leading =, +, - or @.
+        if ($value !== '' && str_contains('=+-@', $value[0])) {
+            return "'" . $value;
+        }
+
+        return $value;
     }
 }

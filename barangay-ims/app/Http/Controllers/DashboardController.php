@@ -35,7 +35,7 @@ class DashboardController extends Controller
             ? round(Resident::count() / $totalHouseholds, 1)
             : 0;
 
-        $recentResidents = Resident::latest()->take(5)->get();
+        $recentResidents = Resident::with('household')->latest()->take(5)->get();
         $recentBlotters = Blotter::with(['complainant', 'respondent'])->latest()->take(5)->get();
         $recentDocuments = DocumentRequest::with(['resident', 'documentType'])->latest()->take(5)->get();
 
