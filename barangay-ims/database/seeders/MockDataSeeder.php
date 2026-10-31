@@ -113,7 +113,7 @@ class MockDataSeeder extends Seeder
     {
         $database = (string) DB::connection()->getDatabaseName();
         $safeName = preg_match('/(test|testing|mock|demo|validation|phase\d+)/i', $database) === 1;
-        if (!app()->environment('testing') && !$safeName && !filter_var(env('ALLOW_MOCK_DATA_SEEDING', false), FILTER_VALIDATE_BOOL)) {
+        if (!app()->environment('testing') && !$safeName && !filter_var(config('seeding.allow_mock_data', false), FILTER_VALIDATE_BOOL)) {
             throw new RuntimeException("MockDataSeeder refused database '{$database}'. Use a disposable database or explicitly set ALLOW_MOCK_DATA_SEEDING=true.");
         }
     }

@@ -48,8 +48,10 @@ class SpreadsheetExportService
     {
         // Neutralize spreadsheet formula injection. TYPE_STRING already forces
         // text type, but prefixing prevents execution in viewers that evaluate
-        // leading =, +, - or @.
-        if ($value !== '' && str_contains('=+-@', $value[0])) {
+        // leading =, +, - or @. Trim left first so " =SUM()" can't bypass.
+        $trimmed = ltrim($value);
+
+        if ($trimmed !== '' && str_contains('=+-@', $trimmed[0])) {
             return "'" . $value;
         }
 

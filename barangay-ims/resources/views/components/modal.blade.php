@@ -1,12 +1,12 @@
-@props(['name' => 'modal', 'title' => 'Confirm Action', 'type' => 'danger', 'method' => 'DELETE', 'confirmText' => 'Delete'])
+@props(['name' => 'modal', 'title' => 'Confirm Action', 'method' => 'DELETE', 'confirmText' => 'Delete'])
 
 @php
-$typeConfig = [
-'danger' => ['icon' => 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z', 'iconBg' => 'bg-red-100', 'iconColor' => 'text-red-600', 'buttonBg' => 'bg-red-600 hover:bg-red-700 focus:ring-red-200'],
-'warning' => ['icon' => 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z', 'iconBg' => 'bg-amber-100', 'iconColor' => 'text-amber-600', 'buttonBg' => 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-200'],
-'info' => ['icon' => 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'iconBg' => 'bg-blue-100', 'iconColor' => 'text-blue-600', 'buttonBg' => 'bg-brand-800 hover:bg-brand-900 focus:ring-brand-200'],
+$config = [
+    'icon' => 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z',
+    'iconBg' => 'bg-red-100',
+    'iconColor' => 'text-red-600',
+    'buttonBg' => 'bg-red-600 hover:bg-red-700 focus:ring-red-200',
 ];
-$config = $typeConfig[$type] ?? $typeConfig['danger'];
 @endphp
 
 <div x-data="{ open: false, actionUrl: '', init() { window['openModal_{{ $name }}'] = (url) => { this.actionUrl = url; this.open = true; } } }"

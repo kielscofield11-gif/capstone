@@ -57,9 +57,8 @@ class ResidentController extends Controller
 
         $residents = $query->with('household')->latest()->paginate(15)->withQueryString();
         $puroks = Resident::whereNotNull('purok')->distinct()->pluck('purok')->sort();
-        $households = Household::where('is_active', true)->select('id', 'household_number', 'purok', 'street_address')->with(['residents:id,household_id,first_name,middle_name,last_name,suffix,is_household_head'])->orderBy('household_number')->get();
 
-        return view('residents.index', compact('residents', 'puroks', 'households'));
+        return view('residents.index', compact('residents', 'puroks'));
     }
 
     public function create(Request $request)
@@ -93,10 +92,15 @@ class ResidentController extends Controller
             'is_pwd' => 'boolean',
             'is_senior' => 'boolean',
             'is_4ps' => 'boolean',
-            'household_id' => ['nullable', Rule::exists('households', 'id')->where('is_active', true)],
+            'household_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->boolean('is_household_head')),
+                Rule::exists('households', 'id')->where('is_active', true),
+            ],
             'is_household_head' => 'boolean',
         ]);
         $validated = $this->normalizeBooleanFields($request, $validated);
+        $validated['nationality'] = $validated['nationality'] ?? 'Filipino';
 
         $validated['created_by'] = Auth::id();
 
@@ -168,12 +172,22 @@ class ResidentController extends Controller
             'is_pwd' => 'boolean',
             'is_senior' => 'boolean',
             'is_4ps' => 'boolean',
-            'household_id' => ['nullable', Rule::exists('households', 'id')->where(function ($query) use ($resident) {
-                $query->where('is_active', true)->orWhere('id', $resident->household_id);
-            })],
+            'household_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->boolean('is_household_head')),
+                Rule::exists('households', 'id')->where(function ($query) use ($resident) {
+                    $query->where('is_active', true)->orWhere('id', $resident->household_id);
+                }),
+            ],
             'is_household_head' => 'boolean',
         ]);
         $validated = $this->normalizeBooleanFields($request, $validated);
+        if (! isset($validated['nationality']) || $validated['nationality'] === null || $validated['nationality'] === '') {
+            unset($validated['nationality']);
+            if ($resident->nationality === null || $resident->nationality === '') {
+                $validated['nationality'] = 'Filipino';
+            }
+        }
 
         try {
             \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $resident) {
@@ -205,7 +219,11 @@ class ResidentController extends Controller
 
         $name = $resident->full_name;
         $before = $this->auditSnapshot($resident);
-        $resident->delete();
+        try {
+            $resident->delete();
+        } catch (\Illuminate\Database\QueryException) {
+            return back()->with('error', 'Cannot delete resident with existing records. Remove linked records first.');
+        }
 
         $this->auditDeleted($resident, $before, "Soft-deleted resident {$name}");
 

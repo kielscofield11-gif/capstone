@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Announcement;
 use App\Models\Blotter;
 use App\Models\DocumentRequest;
 use App\Models\Household;
@@ -28,7 +29,6 @@ class DashboardController extends Controller
         $genderDistribution = $charts->grouped(Resident::query()->whereNotNull('gender'), 'gender')->pluck('total', 'gender');
 
         $todayResidents = Resident::whereDate('created_at', today())->count();
-        $todayBlotters = Blotter::whereDate('created_at', today())->count();
         $todayDocuments = DocumentRequest::whereDate('created_at', today())->count();
 
         $avgHouseholdSize = $totalHouseholds > 0
@@ -50,7 +50,10 @@ class DashboardController extends Controller
             ? round((Blotter::whereIn('status', ['resolved', 'dismissed'])->count() / $totalBlotters) * 100)
             : 0;
 
+        $pinnedAnnouncements = Announcement::query()->published()->take(3)->get();
+
         return view('dashboard.index', compact(
+            'pinnedAnnouncements',
             'totalResidents',
             'totalHouseholds',
             'totalBlotters',
@@ -63,7 +66,6 @@ class DashboardController extends Controller
             'fourPsCount',
             'genderDistribution',
             'todayResidents',
-            'todayBlotters',
             'todayDocuments',
             'avgHouseholdSize',
             'recentResidents',

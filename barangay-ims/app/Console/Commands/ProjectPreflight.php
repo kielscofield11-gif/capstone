@@ -20,7 +20,7 @@ class ProjectPreflight extends Command
         try {
             $driver = DB::getDriverName();
             $database = DB::connection()->getDatabaseName();
-            $version = $this->databaseVersion($driver);
+            $version = $this->databaseVersion();
 
             $this->table(['Database check', 'Value'], [
                 ['Connection', config('database.default')],
@@ -30,7 +30,7 @@ class ProjectPreflight extends Command
             ]);
 
             $this->reportMigrationState();
-            $this->reportRoles($driver);
+            $this->reportRoles();
             $this->reportDuplicateNumbers();
             $this->reportRelationshipIntegrity();
             $this->reportFoundationSchema();
@@ -46,12 +46,17 @@ class ProjectPreflight extends Command
         }
     }
 
-    private function databaseVersion(string $driver): string
+    private function databaseVersion(): string
     {
-        return match ($driver) {
-            'sqlite' => (string) (DB::selectOne('select sqlite_version() as version')->version ?? 'unknown'),
-            default => (string) (DB::selectOne('select version() as version')->version ?? 'unknown'),
+        $driver = DB::getDriverName();
+
+        $row = match ($driver) {
+            'sqlite' => DB::selectOne('select sqlite_version() as version'),
+            'pgsql' => DB::selectOne('select version() as version'),
+            default => DB::selectOne('select version() as version'),
         };
+
+        return (string) ($row->version ?? 'unknown');
     }
 
     private function reportMigrationState(): void
@@ -70,13 +75,13 @@ class ProjectPreflight extends Command
         ]);
     }
 
-    private function reportRoles(string $driver): void
+    private function reportRoles(): void
     {
         $roles = Schema::hasTable('users')
             ? DB::table('users')->select('role', DB::raw('count(*) as total'))->groupBy('role')->pluck('total', 'role')
             : collect();
 
-        $captainSupported = $this->captainSchemaSupported($driver);
+        $captainSupported = $this->captainSchemaSupported();
         $rows = $roles->map(fn ($total, $role) => [$role, (string) $total])->values()->all();
         $rows[] = ['Supported application roles', implode(', ', User::ROLES)];
         $rows[] = ['Captain allowed by schema', $captainSupported ? 'Yes' : 'No / migration pending'];
@@ -85,20 +90,21 @@ class ProjectPreflight extends Command
         $this->table(['Role check', 'Value'], $rows);
     }
 
-    private function captainSchemaSupported(string $driver): bool
+    private function captainSchemaSupported(): bool
     {
         if (!Schema::hasTable('users') || !Schema::hasColumn('users', 'role')) {
             return false;
         }
 
-        if ($driver === 'mysql') {
-            $column = DB::selectOne("SHOW COLUMNS FROM users WHERE Field = 'role'");
-            return str_contains(strtolower((string) ($column->Type ?? '')), "'captain'");
+        if (DB::getDriverName() !== 'mysql') {
+            return in_array('2026_08_20_000001_add_captain_role_to_users_table',
+                Schema::hasTable('migrations') ? DB::table('migrations')->pluck('migration')->all() : [], true);
         }
 
-        if ($driver === 'sqlite') {
-            $schema = DB::selectOne("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'");
-            return str_contains(strtolower((string) ($schema->sql ?? '')), "'captain'");
+        $column = DB::selectOne("SHOW COLUMNS FROM users WHERE Field = 'role'");
+
+        if ($column !== null) {
+            return str_contains(strtolower((string) ($column->Type ?? '')), "'captain'");
         }
 
         return in_array('2026_08_20_000001_add_captain_role_to_users_table',

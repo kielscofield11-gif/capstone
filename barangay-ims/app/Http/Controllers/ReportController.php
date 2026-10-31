@@ -6,8 +6,8 @@ use App\Models\Blotter;
 use App\Models\DocumentRequest;
 use App\Models\Resident;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
 {
@@ -24,7 +24,7 @@ class ReportController extends Controller
             'purok' => 'nullable|string|max:100',
             'gender' => 'nullable|in:male,female,other',
             'age_from' => 'nullable|integer|min:0|max:150',
-            'age_to' => 'nullable|integer|min:0|max:150',
+            'age_to' => ['nullable', 'integer', 'min:0', 'max:150', Rule::when($request->filled('age_from'), 'gte:age_from')],
         ]);
 
         $query = Resident::query();
@@ -45,7 +45,7 @@ class ReportController extends Controller
             $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
         }
 
-        $residents = $query->with('household')->get();
+        $residents = $query->with('household')->limit(5000)->get();
         $totalCount = $residents->count();
 
         $genderBreakdown = [
@@ -98,7 +98,7 @@ class ReportController extends Controller
             $query->whereDate('incident_date', '<=', $filters['date_to']);
         }
 
-        $blotters = $query->get();
+        $blotters = $query->limit(5000)->get();
         $totalCount = $blotters->count();
 
         $statusBreakdown = $blotters->groupBy('status')->map->count();
@@ -143,7 +143,7 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        $documents = $query->get();
+        $documents = $query->limit(5000)->get();
         $totalCount = $documents->count();
         $totalFees = $documents->sum('fee_amount');
 

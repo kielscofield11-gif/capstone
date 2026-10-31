@@ -1,4 +1,4 @@
-@props(['status' => '', 'styleMap' => '[]', 'size' => 'sm'])
+@props(['status' => '', 'size' => 'sm'])
 
 @php
 $sizeClasses = $size === 'sm' ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5';
@@ -12,10 +12,19 @@ $defaults = [
 'cancelled' => ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'],
 'active' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
 'inactive' => ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'],
+'draft' => ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'],
+'published' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
+'archived' => ['bg-blue-50 text-blue-700 border-blue-200', 'bg-blue-500'],
+'paid' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
+'unpaid' => ['bg-amber-50 text-amber-700 border-amber-200', 'bg-amber-500'],
+'failed' => ['bg-red-50 text-red-700 border-red-200', 'bg-red-500'],
+'expired' => ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'],
+'refunded' => ['bg-purple-50 text-purple-700 border-purple-200', 'bg-purple-500'],
+'payment_paid' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
+'payment_recorded' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
+'payment_failed' => ['bg-red-50 text-red-700 border-red-200', 'bg-red-500'],
 ];
-$parsedStyles = is_string($styleMap) ? json_decode($styleMap, true) : $styleMap;
-$merged = array_merge($defaults, is_array($parsedStyles) ? $parsedStyles : []);
-$selected = $merged[$status] ?? ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'];
+$selected = $defaults[$status] ?? ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'];
 @endphp
 
 <span class="inline-flex items-center gap-1.5 {{ $sizeClasses }} rounded-full font-medium border {{ $selected[0] }}">

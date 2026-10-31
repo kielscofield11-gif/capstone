@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Traits\LogsAudit;
 use Illuminate\Http\Request;
 use App\Support\PasswordPolicy;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -52,12 +53,12 @@ class UserController extends Controller
         $this->authorize('update', $user);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(User::ROLES)],
             'is_active' => 'boolean',
         ]);
 
-        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_active'] = $request->boolean('is_active', $user->is_active);
 
         if ($user->id === $request->user()->id && !$validated['is_active']) {
             return back()->with('error', 'You cannot deactivate your own account while signed in.');
@@ -67,28 +68,36 @@ class UserController extends Controller
             return back()->with('error', 'You cannot change your own role. Ask another administrator to do it.');
         }
 
-        if ($user->isAdmin()
-            && User::where('role', User::ROLE_ADMIN)->count() <= 1
-            && ($validated['role'] !== User::ROLE_ADMIN || !$validated['is_active'])) {
-            return back()->with('error', 'The last administrator must remain active and keep the Administrator role.');
-        }
-
         if ($request->filled('password')) {
             $request->validate(['password' => ['string', 'confirmed', PasswordPolicy::rule()]]);
             $validated['password'] = $request->password;
         }
 
-        $before = $this->auditSnapshot($user);
-        $user->update($validated);
+        $result = DB::transaction(function () use ($user, $validated) {
+            if ($user->isAdmin()
+                && User::where('role', User::ROLE_ADMIN)->lockForUpdate()->count() <= 1
+                && ($validated['role'] !== User::ROLE_ADMIN || ! $validated['is_active'])) {
+                return false;
+            }
 
-        $changes = $user->getChanges();
-        $action = match (true) {
-            array_key_exists('role', $changes) => 'role_changed',
-            array_key_exists('is_active', $changes) => $user->is_active ? 'activated' : 'deactivated',
-            array_key_exists('password', $changes) => 'password_changed',
-            default => 'updated',
-        };
-        $this->auditUpdated($user, $before, "Updated user account {$user->name}", $action);
+            $before = $this->auditSnapshot($user);
+            $user->update($validated);
+
+            $changes = $user->getChanges();
+            $action = match (true) {
+                array_key_exists('role', $changes) => 'role_changed',
+                array_key_exists('is_active', $changes) => $user->is_active ? 'activated' : 'deactivated',
+                array_key_exists('password', $changes) => 'password_changed',
+                default => 'updated',
+            };
+            $this->auditUpdated($user, $before, "Updated user account {$user->name}", $action);
+
+            return true;
+        });
+
+        if (! $result) {
+            return back()->with('error', 'The last administrator must remain active and keep the Administrator role.');
+        }
 
         return redirect()->route('users.index')->with('success', 'User account updated successfully.');
     }
@@ -100,15 +109,23 @@ class UserController extends Controller
             return back()->with('error', 'You cannot delete your own account while signed in.');
         }
 
-        if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
+        $deleted = DB::transaction(function () use ($user) {
+            if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->lockForUpdate()->count() <= 1) {
+                return false;
+            }
+
+            $name = $user->name;
+            $before = $this->auditSnapshot($user);
+            $user->delete();
+
+            $this->auditDeleted($user, $before, "Deleted user account {$name}");
+
+            return true;
+        });
+
+        if (! $deleted) {
             return back()->with('error', 'Cannot delete the last admin account.');
         }
-
-        $name = $user->name;
-        $before = $this->auditSnapshot($user);
-        $user->delete();
-
-        $this->auditDeleted($user, $before, "Deleted user account {$name}");
 
         return redirect()->route('users.index')->with('success', 'User account deleted successfully.');
     }

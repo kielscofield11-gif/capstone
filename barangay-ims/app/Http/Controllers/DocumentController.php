@@ -8,6 +8,7 @@ use App\Models\Resident;
 use App\Traits\LogsAudit;
 use App\Services\NumberSequenceService;
 use App\Services\DocumentTemplateRenderer;
+use App\Services\Payments\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class DocumentController extends Controller
             'date_to' => 'nullable|date|after_or_equal:date_from',
         ]);
 
-        $query = DocumentRequest::with(['resident', 'documentType', 'requestedBy']);
+        $query = DocumentRequest::with(['resident', 'documentType', 'requestedBy', 'payments']);
 
         if ($request->filled('search')) {
             $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
@@ -74,7 +75,7 @@ class DocumentController extends Controller
     {
         $this->authorize('create', DocumentRequest::class);
         $validated = $request->validate([
-            'resident_id' => 'required|exists:residents,id',
+            'resident_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at')],
             'document_type_id' => ['required', Rule::exists('document_types', 'id')->where('is_active', true)],
             'purpose' => 'nullable|string|max:2000',
             'remarks' => 'nullable|string|max:2000',
@@ -102,8 +103,19 @@ class DocumentController extends Controller
     public function show(DocumentRequest $document)
     {
         $this->authorize('view', $document);
-        $document->load(['resident', 'documentType', 'requestedBy', 'approvedBy']);
-        return view('documents.show', compact('document'));
+        $document->load([
+            'resident',
+            'documentType',
+            'requestedBy',
+            'approvedBy',
+            'payments' => fn ($query) => $query->latest(),
+        ]);
+
+        $paidPayment = $document->paidPayment();
+        $pendingPayment = $document->pendingPayment();
+        $onlinePaymentsEnabled = app(PaymentService::class)->onlinePaymentsConfigured();
+
+        return view('documents.show', compact('document', 'paidPayment', 'pendingPayment', 'onlinePaymentsEnabled'));
     }
 
     public function edit(DocumentRequest $document)
@@ -130,7 +142,7 @@ class DocumentController extends Controller
         }
 
         $validated = $request->validate([
-            'resident_id' => 'required|exists:residents,id',
+            'resident_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at')],
             'document_type_id' => ['required', Rule::exists('document_types', 'id')->where(function ($query) use ($document) {
                 $query->where('is_active', true)->orWhere('id', $document->document_type_id);
             })],
@@ -138,6 +150,12 @@ class DocumentController extends Controller
             'remarks' => 'nullable|string|max:2000',
             'fee_amount' => 'nullable|numeric|min:0|max:9999999.99|decimal:0,2',
         ]);
+
+        $validated['fee_amount'] = $validated['fee_amount'] ?? $document->fee_amount;
+
+        if ($document->payments()->exists() && (float) $validated['fee_amount'] !== (float) $document->fee_amount) {
+            return back()->withInput()->with('error', 'The fee cannot be changed after a payment has been created.');
+        }
 
         $before = $this->auditSnapshot($document);
         $document->update($validated);
@@ -155,9 +173,17 @@ class DocumentController extends Controller
             return back()->with('error', 'Approved or released documents cannot be deleted to preserve history.');
         }
 
+        if ($document->payments()->exists()) {
+            return back()->with('error', 'This document has payment records and cannot be deleted.');
+        }
+
         $number = $document->control_number;
         $before = $this->auditSnapshot($document);
-        $document->delete();
+        try {
+            $document->delete();
+        } catch (\Illuminate\Database\QueryException) {
+            return back()->with('error', 'Cannot delete document due to linked records.');
+        }
 
         $this->auditDeleted($document, $before, "Deleted document request {$number}");
 
@@ -167,18 +193,29 @@ class DocumentController extends Controller
     public function approve(DocumentRequest $document)
     {
         $this->authorize('approve', $document);
-        if (!in_array($document->status, ['pending'])) {
+
+        $result = DB::transaction(function () use ($document) {
+            $locked = DocumentRequest::whereKey($document->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'pending') {
+                return false;
+            }
+
+            $before = $this->auditSnapshot($locked);
+            $locked->update([
+                'status' => 'approved',
+                'approved_by' => Auth::id(),
+                'approved_date' => now(),
+            ]);
+
+            $this->auditUpdated($locked, $before, "Approved document request {$locked->control_number}", 'approved');
+
+            return true;
+        });
+
+        if (! $result) {
             return back()->with('error', 'Only pending documents can be approved.');
         }
-
-        $before = $this->auditSnapshot($document);
-        $document->update([
-            'status' => 'approved',
-            'approved_by' => Auth::id(),
-            'approved_date' => now(),
-        ]);
-
-        $this->auditUpdated($document, $before, "Approved document request {$document->control_number}", 'approved');
 
         return back()->with('success', 'Document request approved.');
     }
@@ -186,24 +223,43 @@ class DocumentController extends Controller
     public function release(DocumentRequest $document)
     {
         $this->authorize('release', $document);
-        if (!in_array($document->status, ['approved'])) {
+
+        $result = DB::transaction(function () use ($document) {
+            $locked = DocumentRequest::whereKey($document->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'approved') {
+                return 'not_approved';
+            }
+
+            if (! $locked->isPaid()) {
+                return 'unpaid';
+            }
+
+            $before = $this->auditSnapshot($locked);
+            $locked->loadMissing(['resident.household', 'documentType.documentTemplate']);
+            $locked->update([
+                'status' => 'released',
+                'released_date' => now(),
+                'issued_document_snapshot' => app(DocumentTemplateRenderer::class)->snapshot($locked),
+                'issued_at' => now(),
+            ]);
+
+            $this->auditUpdated($locked, $before, "Released document request {$locked->control_number}", 'released');
+            $this->auditEvent('document_issued', $locked, "Captured issued document snapshot for {$locked->control_number}", null, [
+                'template_id' => data_get($locked->issued_document_snapshot, 'template_id'),
+                'template_name' => data_get($locked->issued_document_snapshot, 'template_name'),
+            ]);
+
+            return 'released';
+        });
+
+        if ($result === 'not_approved') {
             return back()->with('error', 'Only approved documents can be released.');
         }
 
-        $before = $this->auditSnapshot($document);
-        $document->loadMissing(['resident.household', 'documentType.documentTemplate']);
-        $document->update([
-            'status' => 'released',
-            'released_date' => now(),
-            'issued_document_snapshot' => app(DocumentTemplateRenderer::class)->snapshot($document),
-            'issued_at' => now(),
-        ]);
-
-        $this->auditUpdated($document, $before, "Released document request {$document->control_number}", 'released');
-        $this->auditEvent('document_issued', $document, "Captured issued document snapshot for {$document->control_number}", null, [
-            'template_id' => data_get($document->issued_document_snapshot, 'template_id'),
-            'template_name' => data_get($document->issued_document_snapshot, 'template_name'),
-        ]);
+        if ($result === 'unpaid') {
+            return back()->with('error', 'The document fee must be paid before this request can be released.');
+        }
 
         return back()->with('success', 'Document marked as released.');
     }
@@ -211,13 +267,33 @@ class DocumentController extends Controller
     public function cancel(DocumentRequest $document)
     {
         $this->authorize('cancel', $document);
-        if (in_array($document->status, ['released'])) {
+
+        $result = DB::transaction(function () use ($document) {
+            $locked = DocumentRequest::whereKey($document->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === 'released') {
+                return 'released';
+            }
+
+            if ($locked->status === 'cancelled') {
+                return 'already';
+            }
+
+            $before = $this->auditSnapshot($locked);
+            $locked->update(['status' => 'cancelled', 'approved_by' => null, 'approved_date' => null]);
+            $this->auditUpdated($locked, $before, "Cancelled document request {$locked->control_number}", 'cancelled');
+
+            return 'cancelled';
+        });
+
+        if ($result === 'released') {
             return back()->with('error', 'Released documents cannot be cancelled.');
         }
 
-        $before = $this->auditSnapshot($document);
-        $document->update(['status' => 'cancelled', 'approved_by' => null, 'approved_date' => null]);
-        $this->auditUpdated($document, $before, "Cancelled document request {$document->control_number}", 'cancelled');
+        if ($result === 'already') {
+            return back()->with('success', 'Document request is already cancelled.');
+        }
+
         return back()->with('success', 'Document request cancelled.');
     }
 

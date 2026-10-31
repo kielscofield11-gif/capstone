@@ -61,7 +61,7 @@ class DocumentTypeController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_active'] = $request->boolean('is_active', $documentType->is_active);
 
         $before = $this->auditSnapshot($documentType);
         $documentType->update($validated);
@@ -80,17 +80,17 @@ class DocumentTypeController extends Controller
 
         try {
             $deleted = \Illuminate\Support\Facades\DB::transaction(function () use ($documentType) {
-                $documentType->lockForUpdate();
+                $locked = DocumentType::whereKey($documentType->id)->lockForUpdate()->first();
 
-                if ($documentType->documentRequests()->exists()) {
+                if (! $locked || $locked->documentRequests()->exists()) {
                     return false;
                 }
 
-                $name = $documentType->name;
-                $before = $this->auditSnapshot($documentType);
-                $documentType->delete();
+                $name = $locked->name;
+                $before = $this->auditSnapshot($locked);
+                $locked->delete();
 
-                $this->auditDeleted($documentType, $before, "Deleted document type {$name}");
+                $this->auditDeleted($locked, $before, "Deleted document type {$name}");
 
                 return true;
             });

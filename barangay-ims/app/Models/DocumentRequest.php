@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentRequest extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'control_number',
         'resident_id',
@@ -35,12 +32,47 @@ class DocumentRequest extends Model
 
     public function resident()
     {
-        return $this->belongsTo(Resident::class);
+        return $this->belongsTo(Resident::class)->withTrashed();
     }
 
     public function documentType()
     {
         return $this->belongsTo(DocumentType::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function paidPayment(): ?Payment
+    {
+        $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
+
+        return $payments
+            ->filter(fn (Payment $payment) => $payment->isPaid()
+                && (float) $payment->amount >= (float) $this->fee_amount)
+            ->sortByDesc(fn (Payment $payment) => $payment->paid_at ?? $payment->created_at)
+            ->first();
+    }
+
+    public function pendingPayment(): ?Payment
+    {
+        $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
+
+        return $payments
+            ->filter(fn (Payment $payment) => $payment->isPending())
+            ->sortByDesc('created_at')
+            ->first();
+    }
+
+    public function isPaid(): bool
+    {
+        if ((float) $this->fee_amount <= 0) {
+            return true;
+        }
+
+        return $this->paidPayment() !== null;
     }
 
     public function requestedBy()

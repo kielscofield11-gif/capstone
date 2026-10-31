@@ -45,7 +45,25 @@ class ReminderService
                 }
             });
 
+        $this->prune();
+
         return $created;
+    }
+
+    private function prune(): void
+    {
+        // Bound table growth: daily reminders are idempotent per day, so drop
+        // read operational reminders older than 30 days and anything over 90.
+        DB::table('notifications')
+            ->where('type', 'operational_reminder')
+            ->where(function ($query) {
+                $query->where('created_at', '<', now()->subDays(90))
+                    ->orWhere(function ($query) {
+                        $query->whereNotNull('read_at')
+                            ->where('created_at', '<', now()->subDays(30));
+                    });
+            })
+            ->delete();
     }
 
     private function insert(User $user, string $category, string $recordType, int $recordId, Carbon $date, string $title, string $message, string $url): int

@@ -36,12 +36,10 @@
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.2s ease-out',
-                        'slide-in': 'slideIn 0.3s ease-out',
                         'slide-up': 'slideUp 0.3s ease-out',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideIn: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(0)' } },
                         slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
                     }
                 }
@@ -52,8 +50,6 @@
         [x-cloak] { display: none !important; }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         @media print { .no-print { display: none !important; } body { background: white !important; } }
-        .toast-enter { animation: slideUp 0.3s ease-out; }
-        .toast-exit { animation: fadeIn 0.2s ease-out reverse; }
         .responsive-table { overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
         .responsive-table table { min-width: 38rem; }
         .break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
@@ -106,7 +102,7 @@
     @endauth
 
     @auth
-        <x-modal name="deleteModal" title="Delete Record" type="danger" :confirm-text="'Delete'" :method="'DELETE'">
+        <x-modal name="deleteModal" title="Delete Record" :confirm-text="'Delete'" :method="'DELETE'">
             Are you sure you want to delete this record? This action cannot be undone.
         </x-modal>
     @endauth

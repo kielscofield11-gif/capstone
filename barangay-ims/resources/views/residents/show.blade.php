@@ -175,7 +175,7 @@
                     <a href="{{ route('documents.show', $doc) }}" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors group">
                         <div>
                             <span class="text-sm font-medium text-gray-900 group-hover:text-brand-700">{{ $doc->control_number }}</span>
-                            <span class="text-xs text-gray-400 ml-2">{{ $doc->documentType->name ?? 'N/A' }}</span>
+                            <span class="text-xs text-gray-400 ml-2">{{ $doc->documentType?->name ?? 'N/A' }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-gray-400">₱{{ number_format($doc->fee_amount, 2) }}</span>

@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use Notifiable;
 
     public const ROLE_ADMIN = 'admin';
     public const ROLE_SECRETARY = 'secretary';
@@ -48,11 +46,6 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function hasRole($role): bool
-    {
-        return $this->role === $role;
-    }
-
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles);
@@ -61,21 +54,6 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
-    }
-
-    public function isKagawad(): bool
-    {
-        return $this->role === self::ROLE_KAGAWAD;
-    }
-
-    public function isCaptain(): bool
-    {
-        return $this->role === self::ROLE_CAPTAIN;
-    }
-
-    public function isSecretary(): bool
-    {
-        return $this->role === self::ROLE_SECRETARY;
     }
 
     public function getRoleLabelAttribute(): string
@@ -88,35 +66,5 @@ class User extends Authenticatable
             self::ROLE_STAFF => 'Staff',
             default => ucfirst((string) $this->role),
         };
-    }
-
-    public function createdResidents()
-    {
-        return $this->hasMany(Resident::class, 'created_by');
-    }
-
-    public function createdHouseholds()
-    {
-        return $this->hasMany(Household::class, 'created_by');
-    }
-
-    public function createdBlotters()
-    {
-        return $this->hasMany(Blotter::class, 'created_by');
-    }
-
-    public function resolvedBlotters()
-    {
-        return $this->hasMany(Blotter::class, 'resolved_by');
-    }
-
-    public function requestedDocuments()
-    {
-        return $this->hasMany(DocumentRequest::class, 'requested_by');
-    }
-
-    public function approvedDocuments()
-    {
-        return $this->hasMany(DocumentRequest::class, 'approved_by');
     }
 }

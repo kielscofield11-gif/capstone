@@ -4,6 +4,33 @@
 @section('header', 'Dashboard')
 
 @section('content')
+@if($pinnedAnnouncements->isNotEmpty())
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    @foreach($pinnedAnnouncements as $announcement)
+        @php
+            $categoryStyles = [
+                'general' => 'border-l-brand-500 bg-brand-50/50 text-brand-700',
+                'event' => 'border-l-purple-500 bg-purple-50/50 text-purple-700',
+                'notice' => 'border-l-amber-500 bg-amber-50/50 text-amber-700',
+                'emergency' => 'border-l-rose-500 bg-rose-50/50 text-rose-700',
+            ];
+        @endphp
+        <a href="{{ route('announcements.show', $announcement) }}" class="block bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 p-4 hover:shadow-md transition-shadow {{ $categoryStyles[$announcement->category] ?? $categoryStyles['general'] }}">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.177.918l-2.111-2.423A2.25 2.25 0 014 16.72V7.28a2.25 2.25 0 01.918-1.82L7.318 3.06A1.76 1.76 0 019.5 2.061c.918.14 1.5.884 1.5 1.82zM19.5 6c0-1.105-.895-2-2-2s-2 .895-2 2v11a2 2 0 002 2h2v-3.5a3.5 3.5 0 00-3.5-3.5H15V6h4.5z"/></svg>
+                <span class="text-xs font-semibold uppercase tracking-wider">{{ $announcement->category }}</span>
+                @if($announcement->published_at && $announcement->published_at->isCurrentDay())
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">NEW</span>
+                @endif
+            </div>
+            <p class="mt-2 font-semibold text-gray-900 break-anywhere">{{ $announcement->title }}</p>
+            <p class="mt-1 text-xs text-gray-500 break-anywhere">{{ \Illuminate\Support\Str::limit($announcement->body, 90) }}</p>
+            <p class="mt-2 text-[11px] text-gray-400">{{ $announcement->published_at?->diffForHumans() }}</p>
+        </a>
+    @endforeach
+</div>
+@endif
+
 <div class="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
     <x-stat-card gradient="from-blue-500 to-blue-700" :value="$totalResidents" label="Total Residents" :sublabel="'+' . $todayResidents . ' today'" :icon="'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'" :href="route('residents.index')" />
     <x-stat-card gradient="from-emerald-500 to-emerald-700" :value="$totalHouseholds" label="Households" :sublabel="$avgHouseholdSize . ' avg'" :icon="'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'" :href="route('households.index')" />
@@ -332,7 +359,7 @@
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium text-gray-900 truncate group-hover:text-brand-700">{{ $document->control_number }}</p>
-                        <p class="text-xs text-gray-400">{{ $document->documentType->name ?? 'N/A' }}</p>
+                        <p class="text-xs text-gray-400">{{ $document->documentType?->name ?? 'N/A' }}</p>
                     </div>
                     <svg class="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>

@@ -12,11 +12,6 @@ class DocumentTypePolicy
         return $user->hasAnyRole(User::ROLES);
     }
 
-    public function view(User $user, DocumentType $documentType): bool
-    {
-        return $this->viewAny($user);
-    }
-
     public function create(User $user): bool
     {
         return $user->isAdmin();

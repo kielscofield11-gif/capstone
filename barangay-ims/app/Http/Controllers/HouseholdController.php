@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Household;
-use App\Models\Resident;
 use App\Traits\LogsAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,7 +88,7 @@ class HouseholdController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_active'] = $request->boolean('is_active', $household->is_active);
 
         if (! $validated['is_active'] && $household->residents()->exists()) {
             return back()->withInput()->with('error', 'Cannot deactivate household with active residents. Transfer residents first.');
@@ -109,17 +108,17 @@ class HouseholdController extends Controller
 
         try {
             $deleted = \Illuminate\Support\Facades\DB::transaction(function () use ($household) {
-                $household->lockForUpdate();
+                $locked = Household::whereKey($household->id)->lockForUpdate()->first();
 
-                if ($household->residents()->exists()) {
+                if (! $locked || $locked->residents()->exists()) {
                     return false;
                 }
 
-                $number = $household->household_number;
-                $before = $this->auditSnapshot($household);
-                $household->delete();
+                $number = $locked->household_number;
+                $before = $this->auditSnapshot($locked);
+                $locked->delete();
 
-                $this->auditDeleted($household, $before, "Deleted household {$number}");
+                $this->auditDeleted($locked, $before, "Deleted household {$number}");
 
                 return true;
             });

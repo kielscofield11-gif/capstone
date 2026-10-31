@@ -27,10 +27,11 @@ class AuditLogController extends Controller
             $query->where(function ($builder) use ($search) {
                 $builder->where('description', 'like', "%{$search}%")
                     ->orWhereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"));
+
+                if (is_numeric($search)) {
+                    $builder->orWhere('model_id', $search);
+                }
             });
-            if (is_numeric($search)) {
-                $query->orWhere('model_id', $search);
-            }
         }
 
         if ($request->filled('user_id')) {

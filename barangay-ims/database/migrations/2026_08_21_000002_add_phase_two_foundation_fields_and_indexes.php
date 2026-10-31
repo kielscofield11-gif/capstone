@@ -24,7 +24,9 @@ return new class extends Migration
         });
 
         Schema::table('document_requests', function (Blueprint $table) {
-            $table->index(['status', 'created_at'], 'document_requests_pending_index');
+            // Note: ['status','created_at'] is already indexed as
+            // document_requests_status_created_index in 2026_08_18_000002.
+            // Do not create a duplicate composite here.
         });
 
         Schema::table('audit_logs', function (Blueprint $table) {
@@ -36,10 +38,6 @@ return new class extends Migration
     {
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropIndex('audit_logs_user_date_index');
-        });
-
-        Schema::table('document_requests', function (Blueprint $table) {
-            $table->dropIndex('document_requests_pending_index');
         });
 
         Schema::table('blotters', function (Blueprint $table) {

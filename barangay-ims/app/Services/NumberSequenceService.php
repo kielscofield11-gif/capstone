@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 class NumberSequenceService
 {
-    public function nextValue(string $sequenceKey, string $prefix, int $year, ?callable $historicalMaximum = null): int
+    private function nextValue(string $sequenceKey, string $prefix, int $year, ?callable $historicalMaximum = null): int
     {
         $this->validate($sequenceKey, $prefix, $year);
 

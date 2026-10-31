@@ -126,8 +126,8 @@
                 @forelse($documents as $d)
                     <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-5 py-3 font-medium text-gray-900">{{ $d->control_number }}</td>
-                        <td class="px-5 py-3 text-gray-600">{{ $d->resident->full_name }}</td>
-                        <td class="px-5 py-3 text-gray-600 hidden sm:table-cell">{{ $d->documentType->name ?? 'N/A' }}</td>
+                        <td class="px-5 py-3 text-gray-600">{{ $d->resident?->full_name ?? 'Unknown' }}</td>
+                        <td class="px-5 py-3 text-gray-600 hidden sm:table-cell">{{ $d->documentType?->name ?? 'N/A' }}</td>
                         <td class="px-5 py-3 text-gray-600 hidden sm:table-cell">₱{{ number_format($d->fee_amount, 2) }}</td>
                         <td class="px-5 py-3">
                             <x-status-badge :status="$d->status">{{ ucfirst($d->status) }}</x-status-badge>

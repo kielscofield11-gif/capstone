@@ -9,6 +9,7 @@ use App\Services\NumberSequenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class BlotterController extends Controller
 {
@@ -67,8 +68,8 @@ class BlotterController extends Controller
     {
         $this->authorize('create', Blotter::class);
         $validated = $request->validate([
-            'complainant_id' => 'required|exists:residents,id|different:respondent_id',
-            'respondent_id' => 'required|exists:residents,id|different:complainant_id',
+            'complainant_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at'), 'different:respondent_id'],
+            'respondent_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at'), 'different:complainant_id'],
             'incident_type' => 'required|string|max:255',
             'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'nullable|string|max:255',
@@ -116,13 +117,9 @@ class BlotterController extends Controller
     {
         $this->authorize('update', $blotter);
 
-        if (in_array($blotter->status, ['resolved', 'dismissed'], true)) {
-            return back()->with('error', 'Resolved or dismissed blotters cannot be edited.');
-        }
-
         $validated = $request->validate([
-            'complainant_id' => 'required|exists:residents,id|different:respondent_id',
-            'respondent_id' => 'required|exists:residents,id|different:complainant_id',
+            'complainant_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at'), 'different:respondent_id'],
+            'respondent_id' => ['required', Rule::exists('residents', 'id')->whereNull('deleted_at'), 'different:complainant_id'],
             'incident_type' => 'required|string|max:255',
             'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'nullable|string|max:255',
@@ -132,16 +129,30 @@ class BlotterController extends Controller
             'resolution' => 'nullable|string|max:10000|required_if:status,resolved,dismissed',
         ]);
 
-        if (in_array($validated['status'], ['resolved', 'dismissed'])) {
-            $validated['resolved_by'] = $blotter->resolved_by ?? Auth::id();
-        } else {
-            $validated['resolved_by'] = null;
+        $updated = DB::transaction(function () use ($validated, $blotter) {
+            $locked = Blotter::whereKey($blotter->id)->lockForUpdate()->firstOrFail();
+
+            if (in_array($locked->status, ['resolved', 'dismissed'], true)) {
+                return false;
+            }
+
+            if (in_array($validated['status'], ['resolved', 'dismissed'])) {
+                $validated['resolved_by'] = $locked->resolved_by ?? Auth::id();
+            } else {
+                $validated['resolved_by'] = null;
+            }
+
+            $before = $this->auditSnapshot($locked);
+            $locked->update($validated);
+
+            $this->auditUpdated($locked, $before, "Updated blotter {$locked->blotter_number}");
+
+            return true;
+        });
+
+        if (! $updated) {
+            return back()->with('error', 'Resolved or dismissed blotters cannot be edited.');
         }
-
-        $before = $this->auditSnapshot($blotter);
-        $blotter->update($validated);
-
-        $this->auditUpdated($blotter, $before, "Updated blotter {$blotter->blotter_number}");
 
         return redirect()->route('blotters.index')->with('success', 'Blotter record updated successfully.');
     }
@@ -150,15 +161,29 @@ class BlotterController extends Controller
     {
         $this->authorize('delete', $blotter);
 
-        if (in_array($blotter->status, ['resolved', 'dismissed'], true)) {
-            return back()->with('error', 'Resolved or dismissed blotters cannot be deleted to preserve history.');
+        try {
+            $deleted = DB::transaction(function () use ($blotter) {
+                $locked = Blotter::whereKey($blotter->id)->lockForUpdate()->firstOrFail();
+
+                if (in_array($locked->status, ['resolved', 'dismissed'], true)) {
+                    return 'protected';
+                }
+
+                $number = $locked->blotter_number;
+                $before = $this->auditSnapshot($locked);
+                $locked->delete();
+
+                $this->auditDeleted($locked, $before, "Deleted blotter {$number}");
+
+                return 'deleted';
+            });
+        } catch (\Illuminate\Database\QueryException) {
+            return back()->with('error', 'Cannot delete blotter due to linked records.');
         }
 
-        $number = $blotter->blotter_number;
-        $before = $this->auditSnapshot($blotter);
-        $blotter->delete();
-
-        $this->auditDeleted($blotter, $before, "Deleted blotter {$number}");
+        if ($deleted !== 'deleted') {
+            return back()->with('error', 'Resolved or dismissed blotters cannot be deleted to preserve history.');
+        }
 
         return redirect()->route('blotters.index')->with('success', 'Blotter record deleted successfully.');
     }

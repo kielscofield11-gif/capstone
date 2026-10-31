@@ -15,12 +15,14 @@
         <x-input-field name="document_type_id" label="Document Type" type="select" :required="true" value="{{ old('document_type_id', $document->document_type_id) }}" :options="$documentTypes->pluck('name', 'id')->toArray()" />
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Fee Amount</label>
+            <label for="fee_amount" class="block text-sm font-medium text-gray-700 mb-1">Fee Amount</label>
             <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₱</span>
-                <input type="number" name="fee_amount" value="{{ old('fee_amount', $document->fee_amount) }}" step="0.01" min="0"
-                    class="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <input type="number" name="fee_amount" id="fee_amount" value="{{ old('fee_amount', $document->fee_amount) }}" step="0.01" min="0"
+                    class="w-full border rounded-lg pl-8 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 @error('fee_amount') border-red-400 ring-2 ring-red-200 @else border-gray-300 @enderror"
+                    @error('fee_amount') aria-invalid="true" aria-describedby="error-fee_amount" @enderror>
             </div>
+            @error('fee_amount') <p id="error-fee_amount" class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <x-input-field name="purpose" label="Purpose" type="textarea" value="{{ old('purpose', $document->purpose) }}" />
@@ -34,3 +36,17 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    const documentTypeFees = @json($documentTypes->pluck('fee_amount', 'id'));
+    const documentTypeSelect = document.getElementById('document_type_id');
+
+    documentTypeSelect?.addEventListener('change', function () {
+        const fee = documentTypeFees[this.value];
+        if (fee !== undefined) {
+            document.getElementById('fee_amount').value = fee;
+        }
+    });
+</script>
+@endpush

@@ -67,8 +67,8 @@
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Household</label>
-                    <select name="household_id" id="household_id" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <label for="household_id" class="block text-sm font-medium text-gray-700 mb-1">Household</label>
+                    <select name="household_id" id="household_id" @error('household_id') aria-invalid="true" aria-describedby="error-household_id" @enderror class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 @error('household_id') border-red-400 ring-2 ring-red-200 @else border-gray-300 @enderror">
                         <option value="">None</option>
                         @foreach($households as $h)
                             <option value="{{ $h->id }}" data-context="{{ $h->street_address ?: $h->purok }}" data-members='@json($h->residents->map(fn($r) => ["name" => $r->full_name, "head" => $r->is_household_head]))' {{ old('household_id', $preselectedHouseholdId ?? '') == $h->id ? 'selected' : '' }}>

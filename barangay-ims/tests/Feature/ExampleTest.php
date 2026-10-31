@@ -79,6 +79,56 @@ class ExampleTest extends TestCase
         $this->assertDatabaseCount('residents', 1);
     }
 
+    public function test_household_head_requires_a_household(): void
+    {
+        $user = User::create([
+            'name' => 'Secretary',
+            'email' => 'secretary-headless@example.com',
+            'password' => bcrypt('password123'),
+            'role' => 'secretary',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)->post('/residents', [
+            'first_name' => 'Headless',
+            'last_name' => 'Person',
+            'birth_date' => '1980-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'is_household_head' => '1',
+        ])->assertSessionHasErrors('household_id');
+
+        $this->assertDatabaseCount('residents', 0);
+    }
+
+    public function test_household_head_is_saved_when_a_household_is_selected(): void
+    {
+        $user = User::create([
+            'name' => 'Secretary',
+            'email' => 'secretary-head@example.com',
+            'password' => bcrypt('password123'),
+            'role' => 'secretary',
+            'is_active' => true,
+        ]);
+        $household = Household::create(['household_number' => 'HH-100']);
+
+        $this->actingAs($user)->post('/residents', [
+            'first_name' => 'With',
+            'last_name' => 'Household',
+            'birth_date' => '1980-01-01',
+            'gender' => 'male',
+            'civil_status' => 'single',
+            'household_id' => $household->id,
+            'is_household_head' => '1',
+        ])->assertRedirect('/residents');
+
+        $this->assertDatabaseHas('residents', [
+            'last_name' => 'Household',
+            'household_id' => $household->id,
+            'is_household_head' => true,
+        ]);
+    }
+
     public function test_updating_a_resident_clears_unchecked_classifications(): void
     {
         $user = User::create([
@@ -151,7 +201,7 @@ class ExampleTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_authenticated_user_can_open_dashboard_with_sqlite(): void
+    public function test_authenticated_user_can_open_dashboard(): void
     {
         $user = User::create([
             'name' => 'Admin',

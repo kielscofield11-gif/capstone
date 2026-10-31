@@ -11,11 +11,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         foreach ([
-            ['name' => 'Admin', 'email' => 'admin@barangay.gov', 'password' => env('SEED_ADMIN_PASSWORD'), 'role' => User::ROLE_ADMIN],
-            ['name' => 'Secretary', 'email' => 'secretary@barangay.gov', 'password' => env('SEED_SECRETARY_PASSWORD'), 'role' => User::ROLE_SECRETARY],
-            ['name' => 'Captain', 'email' => 'captain@barangay.gov', 'password' => env('SEED_CAPTAIN_PASSWORD'), 'role' => User::ROLE_CAPTAIN],
-            ['name' => 'Kagawad', 'email' => 'kagawad@barangay.gov', 'password' => env('SEED_KAGAWAD_PASSWORD'), 'role' => User::ROLE_KAGAWAD],
-            ['name' => 'Staff', 'email' => 'staff@barangay.gov', 'password' => env('SEED_STAFF_PASSWORD'), 'role' => User::ROLE_STAFF],
+            ['name' => 'Admin', 'email' => 'admin@barangay.gov', 'password' => config('seeding.passwords.admin'), 'role' => User::ROLE_ADMIN],
+            ['name' => 'Secretary', 'email' => 'secretary@barangay.gov', 'password' => config('seeding.passwords.secretary'), 'role' => User::ROLE_SECRETARY],
+            ['name' => 'Captain', 'email' => 'captain@barangay.gov', 'password' => config('seeding.passwords.captain'), 'role' => User::ROLE_CAPTAIN],
+            ['name' => 'Kagawad', 'email' => 'kagawad@barangay.gov', 'password' => config('seeding.passwords.kagawad'), 'role' => User::ROLE_KAGAWAD],
+            ['name' => 'Staff', 'email' => 'staff@barangay.gov', 'password' => config('seeding.passwords.staff'), 'role' => User::ROLE_STAFF],
         ] as $account) {
             $password = $account['password'] ?: Str::random(40);
 
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
             DocumentTypeSeeder::class,
         ]);
 
-        if (filter_var(env('SEED_MOCK_DATA', false), FILTER_VALIDATE_BOOL)) {
+        if (filter_var(config('seeding.mock_data', false), FILTER_VALIDATE_BOOL)) {
             $this->call(MockDataSeeder::class);
         }
     }

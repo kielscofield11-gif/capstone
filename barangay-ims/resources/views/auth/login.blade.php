@@ -5,8 +5,6 @@
 @push('styles')
 <style>
     /* Keep the authentication screen usable when the Tailwind CDN is unavailable. */
-    .login-page, .login-page * { box-sizing: border-box; }
-    .login-page { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-x: hidden; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
     .login-bg {
         background-color: #6b8eaf;
         background-image: url('/images/barangay-bg.png?v=2');
@@ -14,29 +12,11 @@
         background-position: center;
         background-repeat: no-repeat;
     }
-    .login-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0, 0, 0, .42), rgba(15, 31, 48, .48)); }
-    .login-shell { position: relative; z-index: 1; width: 100%; max-width: 28rem; }
     .login-card { background: #fff; border-radius: 1rem; padding: 2rem; box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, .28); }
     .login-logo { display: block; width: 4rem; height: 4rem; margin: 0 auto .75rem; object-fit: contain; }
     .login-heading { margin: 0; color: #111827; text-align: center; font-size: 1.25rem; font-weight: 700; }
     .login-subheading { margin: .25rem 0 1.5rem; color: #6b7280; text-align: center; font-size: .875rem; }
-    .login-card form > .mb-5 { margin-bottom: 1.25rem; }
-    .login-card label { display: block; margin-bottom: .25rem; color: #374151; font-size: .875rem; font-weight: 500; }
-    .login-card input:not([type="checkbox"]) { display: block; width: 100%; min-height: 2.75rem; padding: .625rem .75rem; border: 1px solid #d1d5db; border-radius: .75rem; background: #fff; color: #111827; font: inherit; font-size: .875rem; }
-    .login-card input:not([type="checkbox"]):focus { outline: 2px solid #93c5fd; outline-offset: 1px; border-color: #2563eb; }
-    .login-card .relative { position: relative; }
-    .login-card .relative button { position: absolute; right: .25rem; top: 50%; transform: translateY(-50%); padding: .5rem; border: 0; background: transparent; color: #9ca3af; cursor: pointer; }
-    .login-card .relative button:hover { color: #4b5563; }
-    .login-card input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: #1e3a5f; }
-    .login-card form > .flex { display: flex; align-items: center; margin-bottom: 1.5rem; }
-    .login-card form > .flex label { display: flex; align-items: center; gap: .5rem; margin: 0; cursor: pointer; }
-    .login-card button[type="submit"] { width: 100%; min-height: 2.75rem; border: 0; border-radius: .75rem; background: #1e3a5f; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-    .login-card button[type="submit"]:hover { background: #172e46; }
-    .login-card form > div:last-child { margin-top: 1rem; text-align: center; color: #6b7280; font-size: .875rem; }
-    .login-card form > div:last-child a { color: #2563eb; font-weight: 600; text-decoration: none; }
-    .login-card form > div:last-child a:hover { color: #1e3a5f; text-decoration: underline; }
     .login-footer { margin-top: 1.5rem; color: #bfdbfe; text-align: center; font-size: .875rem; }
-    @media (max-width: 480px) { .login-page { align-items: flex-start; padding: 1rem .75rem; } .login-card { padding: 1.5rem 1.25rem; } }
 </style>
 @endpush
 

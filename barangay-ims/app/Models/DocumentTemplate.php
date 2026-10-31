@@ -19,5 +19,4 @@ class DocumentTemplate extends Model
     ];
 
     public function documentTypes() { return $this->hasMany(DocumentType::class); }
-    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
 }

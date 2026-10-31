@@ -26,7 +26,7 @@
         <x-input-field name="details" label="Details" type="textarea" :required="true" placeholder="Describe the incident..." value="{{ old('details') }}" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <x-input-field name="status" label="Status" type="select" value="{{ old('status', 'pending') }}" :options="['pending' => 'Pending', 'hearing' => 'Hearing', 'resolved' => 'Resolved', 'dismissed' => 'Dismissed']" />
+            <x-input-field name="status" label="Status" type="select" value="{{ old('status', 'pending') }}" :options="['pending' => 'Pending', 'hearing' => 'Hearing']" />
             <x-input-field name="hearing_date" label="Hearing Date" type="date" value="{{ old('hearing_date') }}" />
         </div>
 

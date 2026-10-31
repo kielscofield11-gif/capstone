@@ -15,11 +15,11 @@ class DocumentTemplateRenderer
         'signatory_name', 'signatory_position',
     ];
 
-    public function templateFor(DocumentRequest $request): DocumentTemplate
+    private function templateFor(DocumentRequest $request): DocumentTemplate
     {
         return $request->documentType?->documentTemplate?->is_active
             ? $request->documentType->documentTemplate
-            : DocumentTemplate::where('is_default', true)->where('is_active', true)->firstOrFail();
+            : DocumentTemplate::where('is_default', true)->where('is_active', true)->orderBy('id')->firstOrFail();
     }
 
     public function render(DocumentRequest $request, ?DocumentTemplate $template = null, bool $useIssuedSnapshot = true): array
@@ -57,14 +57,14 @@ class DocumentTemplateRenderer
             'logo_path' => $template->logo_path, 'resident_photo_path' => $resident?->photo_path,
             'options' => collect(['show_control_number','show_fee','show_issue_date','show_resident_photo','show_logo'])
                 ->mapWithKeys(fn ($key) => [$key => (bool) $template->{$key}])->all(),
-            'meta' => ['control_number' => e($request->control_number), 'fee' => e($values['fee']), 'issue_date' => e($values['issue_date'])],
+            'meta' => ['control_number' => (string) $request->control_number, 'fee' => (string) $values['fee'], 'issue_date' => (string) $values['issue_date']],
             'captured_at' => now()->toIso8601String(),
         ];
     }
 
     public function snapshot(DocumentRequest $request): array { return $this->render($request, null, false); }
 
-    public function substitute(string $text, array $values): string
+    private function substitute(string $text, array $values): string
     {
         $escapedTemplate = e($text);
         return preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', function ($match) use ($values) {

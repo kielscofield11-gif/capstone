@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Blotter extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'blotter_number',
         'complainant_id',
@@ -31,12 +28,12 @@ class Blotter extends Model
 
     public function complainant()
     {
-        return $this->belongsTo(Resident::class, 'complainant_id');
+        return $this->belongsTo(Resident::class, 'complainant_id')->withTrashed();
     }
 
     public function respondent()
     {
-        return $this->belongsTo(Resident::class, 'respondent_id');
+        return $this->belongsTo(Resident::class, 'respondent_id')->withTrashed();
     }
 
     public function resolvedBy()

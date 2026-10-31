@@ -10,6 +10,7 @@ use App\Services\SpreadsheetExportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class ExportController extends Controller
 {
@@ -20,21 +21,21 @@ class ExportController extends Controller
             'purok' => 'nullable|string|max:100',
             'gender' => 'nullable|in:male,female,other',
             'age_from' => 'nullable|integer|min:0|max:150',
-            'age_to' => 'nullable|integer|min:0|max:150',
+            'age_to' => ['nullable', 'integer', 'min:0', 'max:150', Rule::when($request->filled('age_from'), 'gte:age_from')],
         ]);
         $query = Resident::with('household');
         if (! empty($filters['purok'])) $query->where('purok', $filters['purok']);
         if (! empty($filters['gender'])) $query->where('gender', $filters['gender']);
         if (isset($filters['age_from'])) $query->whereDate('birth_date', '<=', now()->subYears((int) $filters['age_from']));
         if (isset($filters['age_to'])) $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
-        $rows = $query->orderBy('last_name')->get()->map(fn ($r) => [$r->id, $r->full_name, $r->birth_date?->format('Y-m-d'), ucfirst($r->gender), $r->purok, $r->street_address, $r->household?->household_number, $r->phone]);
+        $rows = $query->orderBy('last_name')->limit(10000)->get()->map(fn ($r) => [$r->id, $r->full_name, $r->birth_date?->format('Y-m-d'), ucfirst($r->gender), $r->purok, $r->street_address, $r->household?->household_number, $r->phone]);
         return $excel->download('Resident Report', ['ID', 'Name', 'Birth Date', 'Gender', 'Purok', 'Address', 'Household', 'Phone'], $rows, 'residents-report.xlsx');
     }
 
     public function householdsExcel(SpreadsheetExportService $excel)
     {
         Gate::authorize('view-reports');
-        $rows = Household::withCount('residents')->orderBy('household_number')->get()->map(fn ($h) => [$h->household_number, $h->purok, $h->street_address, $h->residents_count, $h->is_active ? 'Active' : 'Inactive']);
+        $rows = Household::withCount('residents')->orderBy('household_number')->limit(10000)->get()->map(fn ($h) => [$h->household_number, $h->purok, $h->street_address, $h->residents_count, $h->is_active ? 'Active' : 'Inactive']);
         return $excel->download('Household Report', ['Household Number', 'Purok', 'Address', 'Members', 'Status'], $rows, 'households-report.xlsx');
     }
 
@@ -52,7 +53,7 @@ class ExportController extends Controller
         if (! empty($filters['incident_type'])) $query->where('incident_type', $filters['incident_type']);
         if (! empty($filters['date_from'])) $query->whereDate('incident_date', '>=', $filters['date_from']);
         if (! empty($filters['date_to'])) $query->whereDate('incident_date', '<=', $filters['date_to']);
-        $rows = $query->orderBy('incident_date')->get()->map(fn ($b) => [$b->blotter_number, $b->incident_date?->format('Y-m-d'), $b->incident_type, $b->complainant?->full_name, $b->respondent?->full_name, ucfirst($b->status), $b->hearing_date?->format('Y-m-d'), $b->incident_location]);
+        $rows = $query->orderBy('incident_date')->limit(10000)->get()->map(fn ($b) => [$b->blotter_number, $b->incident_date?->format('Y-m-d'), $b->incident_type, $b->complainant?->full_name, $b->respondent?->full_name, ucfirst($b->status), $b->hearing_date?->format('Y-m-d'), $b->incident_location]);
         return $excel->download('Blotter Report', ['Number', 'Incident Date', 'Type', 'Complainant', 'Respondent', 'Status', 'Hearing Date', 'Location'], $rows, 'blotters-report.xlsx');
     }
 
@@ -70,7 +71,7 @@ class ExportController extends Controller
         if (! empty($filters['document_type_id'])) $query->where('document_type_id', $filters['document_type_id']);
         if (! empty($filters['date_from'])) $query->whereDate('created_at', '>=', $filters['date_from']);
         if (! empty($filters['date_to'])) $query->whereDate('created_at', '<=', $filters['date_to']);
-        $rows = $query->oldest()->get()->map(fn ($d) => [$d->control_number, $d->created_at?->format('Y-m-d'), $d->resident?->full_name, $d->documentType?->name, ucfirst($d->status), (float) $d->fee_amount, $d->purpose]);
+        $rows = $query->oldest()->limit(10000)->get()->map(fn ($d) => [$d->control_number, $d->created_at?->format('Y-m-d'), $d->resident?->full_name, $d->documentType?->name, ucfirst($d->status), (float) $d->fee_amount, $d->purpose]);
         return $excel->download('Document Request Report', ['Control Number', 'Requested Date', 'Resident', 'Document Type', 'Status', 'Fee', 'Purpose'], $rows, 'documents-report.xlsx');
     }
 
@@ -81,7 +82,7 @@ class ExportController extends Controller
             'purok' => 'nullable|string|max:100',
             'gender' => 'nullable|in:male,female,other',
             'age_from' => 'nullable|integer|min:0|max:150',
-            'age_to' => 'nullable|integer|min:0|max:150',
+            'age_to' => ['nullable', 'integer', 'min:0', 'max:150', Rule::when($request->filled('age_from'), 'gte:age_from')],
         ]);
         $query = Resident::query();
 
@@ -98,7 +99,7 @@ class ExportController extends Controller
             $query->whereDate('birth_date', '>', now()->subYears((int) $filters['age_to'] + 1));
         }
 
-        $residents = $query->with('household')->get();
+        $residents = $query->with('household')->limit(5000)->get();
         $totalCount = $residents->count();
 
         $pdf = Pdf::loadView('exports.residents-pdf', compact('residents', 'totalCount'))->setPaper('a4', 'landscape');
@@ -129,7 +130,7 @@ class ExportController extends Controller
             $query->whereDate('incident_date', '<=', $filters['date_to']);
         }
 
-        $blotters = $query->get();
+        $blotters = $query->limit(5000)->get();
         $totalCount = $blotters->count();
 
         $pdf = Pdf::loadView('exports.blotters-pdf', compact('blotters', 'totalCount'))->setPaper('a4', 'landscape');
@@ -160,7 +161,7 @@ class ExportController extends Controller
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        $documents = $query->get();
+        $documents = $query->limit(5000)->get();
         $totalCount = $documents->count();
         $totalFees = $documents->sum('fee_amount');
 

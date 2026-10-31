@@ -28,15 +28,6 @@ class AuditLog extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function scopeForModel($query, string $modelType, $modelId = null)
-    {
-        $query->where('model_type', $modelType);
-        if ($modelId !== null) {
-            $query->where('model_id', $modelId);
-        }
-        return $query;
-    }
-
     public function getModuleLabelAttribute(): string
     {
         return class_basename($this->model_type);

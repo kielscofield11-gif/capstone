@@ -3,7 +3,7 @@
 $hasActiveFilters = collect($filters)->contains(function($f) { return request($f['name'] ?? ''); }) || request('search');
 @endphp
 
-<form method="GET" id="filter-form" role="region" aria-label="List filters" tabindex="0" class="flex flex-wrap gap-2 items-end">
+<form method="GET" id="filter-form" role="search" aria-label="List filters" class="flex flex-wrap gap-2 items-end">
     <div class="min-w-0 flex-1 basis-44">
         <input type="search" name="{{ $searchName }}" placeholder="{{ $searchPlaceholder }}" value="{{ request($searchName) }}"
             aria-label="{{ $searchPlaceholder }}" class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors">
