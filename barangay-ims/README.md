@@ -36,6 +36,107 @@ php artisan test
 
 Tests use an in-memory SQLite database and do not require the application database.
 
+## Production deployment
+
+### Server requirements
+
+- PHP 8.2+ with the `dom`, `fileinfo`, `gd`, `mbstring`, `openssl`, `xml`, `zip`, and `zlib` extensions
+- MySQL 5.7+/8.0+ or MariaDB 10.4+
+- Composer 2
+- HTTPS certificate
+- Web server document root pointed at `public/`
+- Write access for the web server user to `storage/` and `bootstrap/cache/`
+- Cron (only needed for the daily reminder job)
+
+### First deployment
+
+1. Clone the repository and install production dependencies:
+
+   ```bash
+   git clone <repository-url> barangay-ims
+   cd barangay-ims
+   composer install --no-dev --optimize-autoloader
+   ```
+
+2. Create the environment file and application key. Start from
+   `.env.production.example` (not `.env.example`, which contains local
+   development values). Fill in the real database, mail, and PayMongo
+   credentials, and set `APP_URL` to the public HTTPS URL.
+
+   ```bash
+   cp .env.production.example .env
+   php artisan key:generate
+   ```
+
+   Keep `APP_ENV=production`, `APP_DEBUG=false`, and
+   `SESSION_SECURE_COOKIE=true`. Never commit the resulting `.env`.
+
+3. Back up any existing database, then apply migrations. Do not use
+   `migrate:fresh` or `migrate:refresh` on a live database.
+
+   ```bash
+   php artisan migrate --force
+   ```
+
+4. Create the initial accounts once. Set strong `SEED_*` passwords in `.env`,
+   run the seeder, then remove the passwords and refresh the config cache.
+   `DatabaseSeeder` uses `updateOrCreate` and resets those passwords every time
+   it runs, so do not run it on later deployments. Keep `SEED_MOCK_DATA=false`
+   in production.
+
+   ```bash
+   php artisan db:seed --force
+   ```
+
+5. Link storage and build production caches:
+
+   ```bash
+   php artisan storage:link
+   php artisan optimize
+   ```
+
+6. Point the web server document root at `public/`. Apache uses the included
+   `public/.htaccess`; for Nginx, route requests to `public/index.php` and deny
+   access to everything outside `public/`.
+
+7. Add the scheduler cron entry so reminders are generated daily:
+
+   ```cron
+   * * * * * cd /path/to/barangay-ims && php artisan schedule:run >> /dev/null 2>&1
+   ```
+
+8. Register the PayMongo webhook at `https://your-host/webhooks/paymongo` with
+   the events listed in the payments section below.
+
+### Every deployment
+
+```bash
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan optimize
+```
+
+### Post-deployment verification
+
+- `GET https://your-host/up` returns a successful health response.
+- `php artisan project:preflight` reports no pending migrations or duplicate
+  control numbers.
+- Log in with each role, open the dashboard, create a resident, generate a
+  document PDF, run an export, and complete a payment in PayMongo test mode.
+- Check that `storage/logs/` is writable and that uploaded logos and resident
+  photos are served from `/storage/...`.
+
+### Deployment notes
+
+- If the app runs behind a reverse proxy or CDN, configure trusted proxies in
+  `bootstrap/app.php` so generated URLs and PayMongo redirects use HTTPS.
+- The UI loads Tailwind CSS, Alpine.js, and Google Fonts from public CDNs. The
+  browser needs internet access for styling and interactivity. For offline
+  deployments, compile and serve these assets locally.
+- `PAYMENT_GATEWAY=fake` is disabled when `APP_ENV=production`; live online
+  checkout requires PayMongo credentials. Cash payments work without them.
+
 ## Online payments (PayMongo)
 
 Document requests with a fee can be paid online through PayMongo hosted checkout.
