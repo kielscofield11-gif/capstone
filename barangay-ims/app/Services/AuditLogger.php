@@ -16,7 +16,7 @@ class AuditLogger
         'password', 'password_confirmation', 'remember_token',
         '_token', '_method', 'session_id', 'csrf_token',
         'api_token', 'access_token', 'refresh_token', 'private_key',
-        'issued_document_snapshot', 'return_token', 'checkout_url',
+        'issued_document_snapshot',
     ];
 
     private const SENSITIVE_FRAGMENTS = [

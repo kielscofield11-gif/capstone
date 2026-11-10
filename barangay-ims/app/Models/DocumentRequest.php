@@ -56,19 +56,11 @@ class DocumentRequest extends Model
             ->first();
     }
 
-    public function pendingPayment(): ?Payment
-    {
-        $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
-
-        return $payments
-            ->filter(fn (Payment $payment) => $payment->isPending())
-            ->sortByDesc('created_at')
-            ->first();
-    }
-
     public function isPaid(): bool
     {
         if ((float) $this->fee_amount <= 0) {
+            // Free documents (fee <= 0) are considered paid by default.
+            // No payment record is required for release.
             return true;
         }
 

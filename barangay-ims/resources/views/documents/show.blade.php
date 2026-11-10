@@ -36,8 +36,6 @@
                                 <x-status-badge status="paid">No fee required</x-status-badge>
                             @elseif($document->isPaid())
                                 <x-status-badge status="paid">Paid</x-status-badge>
-                            @elseif($pendingPayment)
-                                <x-status-badge status="pending">Awaiting payment</x-status-badge>
                             @else
                                 <x-status-badge status="unpaid">Unpaid</x-status-badge>
                             @endif
@@ -106,8 +104,6 @@
                     <x-status-badge status="paid">No fee</x-status-badge>
                 @elseif($document->isPaid())
                     <x-status-badge status="paid">Paid</x-status-badge>
-                @elseif($pendingPayment)
-                    <x-status-badge status="pending">Pending</x-status-badge>
                 @else
                     <x-status-badge status="unpaid">Unpaid</x-status-badge>
                 @endif
@@ -134,16 +130,6 @@
                             <dt class="text-gray-500">Paid at</dt>
                             <dd class="font-medium text-gray-900 text-right">{{ $paidPayment->paid_at?->format('M d, Y h:i A') }}</dd>
                         </div>
-                    @elseif($pendingPayment)
-                        <div class="flex items-start justify-between gap-3">
-                            <dt class="text-gray-500">Reference</dt>
-                            <dd class="text-right"><a href="{{ route('payments.show', $pendingPayment) }}" class="font-medium text-brand-600 hover:text-brand-700">{{ $pendingPayment->reference_number }}</a></dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <dt class="text-gray-500">Link created</dt>
-                            <dd class="font-medium text-gray-900 text-right">{{ $pendingPayment->created_at->format('M d, Y h:i A') }}</dd>
-                        </div>
-                        <a href="{{ route('payments.show', $pendingPayment) }}" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View / share payment link</a>
                     @else
                         <p class="text-sm text-gray-500">No payment has been recorded yet.</p>
                     @endif
@@ -152,21 +138,9 @@
 
             @can('pay', $document)
                 @if($document->status !== 'cancelled' && (float) $document->fee_amount > 0 && ! $document->isPaid())
-                    <div class="mt-4 space-y-2 border-t border-gray-100 pt-4">
-                        @if($onlinePaymentsEnabled)
-                            <form action="{{ route('documents.payments.store', $document) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                    Create online payment link
-                                </button>
-                            </form>
-                        @else
-                            <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Online payments are not configured. Add PayMongo keys or enable demo mode in <code>.env</code>.</p>
-                        @endif
-
+                    <div class="mt-4 border-t border-gray-100 pt-4">
                         <form action="{{ route('documents.payments.cash', $document) }}" method="POST"
-                              onsubmit="return confirm('Record a walk-in cash payment of ₱{{ number_format($document->fee_amount, 2) }}? Do not use this if the resident already paid online.')">
+                              onsubmit="return confirm('Record a walk-in cash payment of ₱{{ number_format($document->fee_amount, 2) }}?')">
                             @csrf
                             <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m4 0h1M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>

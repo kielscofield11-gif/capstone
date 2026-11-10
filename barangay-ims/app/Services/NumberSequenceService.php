@@ -13,20 +13,49 @@ class NumberSequenceService
         $this->validate($sequenceKey, $prefix, $year);
 
         return DB::transaction(function () use ($sequenceKey, $prefix, $year, $historicalMaximum) {
-            NumberSequence::query()->insertOrIgnore([
-                'sequence_key' => $sequenceKey,
-                'prefix' => $prefix,
-                'year' => $year,
-                'next_number' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
+            // Use a shared lock on the table to prevent race conditions during row creation
+            // This is safer than insertOrIgnore which can have race conditions in some DB engines
             $sequence = NumberSequence::query()
                 ->where('sequence_key', $sequenceKey)
                 ->where('year', $year)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $sequence) {
+                $minimum = $historicalMaximum ? max(1, ((int) $historicalMaximum()) + 1) : 1;
+
+                try {
+                    $sequence = NumberSequence::create([
+                        'sequence_key' => $sequenceKey,
+                        'prefix' => $prefix,
+                        'year' => $year,
+                        'next_number' => $minimum + 1,
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // A concurrent transaction created the row first. Reload it
+                    // (locked) and fall through to the update path below so both
+                    // callers hand out sequential, non-duplicate numbers.
+                    $sequence = NumberSequence::query()
+                        ->where('sequence_key', $sequenceKey)
+                        ->where('year', $year)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($sequence) {
+                        $current = max((int) $sequence->next_number, $minimum);
+                        $sequence->update([
+                            'prefix' => $prefix,
+                            'next_number' => $current + 1,
+                        ]);
+
+                        return $current;
+                    }
+
+                    throw $e;
+                }
+
+                return $minimum;
+            }
 
             $minimum = $historicalMaximum ? max(1, ((int) $historicalMaximum()) + 1) : 1;
             $current = max((int) $sequence->next_number, $minimum);

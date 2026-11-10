@@ -60,8 +60,8 @@ Tests use an in-memory SQLite database and do not require the application databa
 
 2. Create the environment file and application key. Start from
    `.env.production.example` (not `.env.example`, which contains local
-   development values). Fill in the real database, mail, and PayMongo
-   credentials, and set `APP_URL` to the public HTTPS URL.
+   development values). Fill in the real database and mail settings, and set
+   `APP_URL` to the public HTTPS URL.
 
    ```bash
    cp .env.production.example .env
@@ -105,9 +105,6 @@ Tests use an in-memory SQLite database and do not require the application databa
    * * * * * cd /path/to/barangay-ims && php artisan schedule:run >> /dev/null 2>&1
    ```
 
-8. Register the PayMongo webhook at `https://your-host/webhooks/paymongo` with
-   the events listed in the payments section below.
-
 ### Every deployment
 
 ```bash
@@ -120,55 +117,28 @@ php artisan optimize
 ### Post-deployment verification
 
 - `GET https://your-host/up` returns a successful health response.
-- `php artisan project:preflight` reports no pending migrations or duplicate
-  control numbers.
+- `php artisan migrate:status` reports no pending migrations.
 - Log in with each role, open the dashboard, create a resident, generate a
-  document PDF, run an export, and complete a payment in PayMongo test mode.
+  document PDF, run an export, and record a cash payment against a document
+  request.
 - Check that `storage/logs/` is writable and that uploaded logos and resident
   photos are served from `/storage/...`.
 
 ### Deployment notes
 
 - If the app runs behind a reverse proxy or CDN, configure trusted proxies in
-  `bootstrap/app.php` so generated URLs and PayMongo redirects use HTTPS.
+  `bootstrap/app.php` so generated URLs use HTTPS.
 - The UI loads Tailwind CSS, Alpine.js, and Google Fonts from public CDNs. The
   browser needs internet access for styling and interactivity. For offline
   deployments, compile and serve these assets locally.
-- `PAYMENT_GATEWAY=fake` is disabled when `APP_ENV=production`; live online
-  checkout requires PayMongo credentials. Cash payments work without them.
 
-## Online payments (PayMongo)
+## Document payments
 
-Document requests with a fee can be paid online through PayMongo hosted checkout.
-Staff create a payment link from a document request and share it with the resident.
-PayMongo confirms the payment through a signed webhook, and a document cannot be
-marked released until its fee has been paid (zero-fee documents are exempt).
-Walk-in cash payments can also be recorded from the same page.
-
-Add these values to `.env`:
-
-```dotenv
-PAYMENT_GATEWAY=paymongo
-PAYMONGO_PUBLIC_KEY=pk_test_...
-PAYMONGO_SECRET_KEY=sk_test_...
-PAYMONGO_WEBHOOK_SECRET=whsec_...
-PAYMONGO_PAYMENT_METHODS="gcash,paymaya,grab_pay,card,qrph"
-```
-
-Then run `php artisan migrate` and register the webhook in
-PayMongo Dashboard → Developers → Webhooks:
-
-- URL: `https://your-host/webhooks/paymongo`
-- Events: `checkout_session.payment.paid`, `payment.paid`, `payment.failed`
-
-For local development, expose the app with a public HTTPS tunnel (for example
-ngrok) and set `APP_URL` to the tunnel URL so PayMongo can reach the webhook.
-
-### Offline demo mode
-
-If PayMongo credentials are not available, set `PAYMENT_GATEWAY=fake`. The
-"online" checkout then opens a local demo page that simulates a successful or
-failed payment without charging money. Demo mode is disabled when `APP_ENV=production`.
+Document requests carry a fee that is collected in person at the barangay hall.
+Staff record a walk-in cash payment from the document request page, and a
+document cannot be marked released until its fee has been paid (zero-fee
+documents are exempt). Every recorded payment appears under **Payments** in the
+sidebar with its reference number, amount, and status.
 
 ## Security
 

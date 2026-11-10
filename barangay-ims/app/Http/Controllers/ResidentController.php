@@ -236,10 +236,32 @@ class ResidentController extends Controller
             return false;
         }
 
+        // Lock the household row to prevent concurrent head assignments
+        $household = Household::whereKey($validated['household_id'])
+            ->lockForUpdate()
+            ->first();
+
+        if (! $household) {
+            return false;
+        }
+
+        // A resident who is already the head of a *different* household cannot be
+        // assigned as head of another household — that would leave the old
+        // household headless and put one resident in charge of two households.
+        if ($exceptId) {
+            $alreadyHeadElsewhere = Resident::where('id', $exceptId)
+                ->where('household_id', '!=', $validated['household_id'])
+                ->where('is_household_head', true)
+                ->exists();
+
+            if ($alreadyHeadElsewhere) {
+                return true;
+            }
+        }
+
         return Resident::where('household_id', $validated['household_id'])
             ->where('is_household_head', true)
             ->when($exceptId, fn ($query) => $query->where('id', '<>', $exceptId))
-            ->lockForUpdate()
             ->exists();
     }
 

@@ -20,25 +20,12 @@ use App\Policies\HouseholdPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ResidentPolicy;
 use App\Policies\UserPolicy;
-use App\Services\Payments\FakePaymentGateway;
-use App\Services\Payments\PaymentGateway;
-use App\Services\Payments\PayMongoGateway;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void
-    {
-        $this->app->singleton(PaymentGateway::class, function () {
-            return match (config('payments.default')) {
-                'fake' => new FakePaymentGateway(),
-                default => new PayMongoGateway(),
-            };
-        });
-    }
-
     public function boot(): void
     {
         Paginator::useTailwind();

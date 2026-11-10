@@ -7,8 +7,7 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100">
     <div class="p-4 md:p-5 border-b border-gray-100">
         <x-filter-bar :route="route('payments.index')" search-placeholder="Search reference, control #, or name..." :filters="[
-            ['name' => 'status', 'placeholder' => 'All Statuses', 'options' => ['pending' => 'Pending', 'paid' => 'Paid', 'failed' => 'Failed', 'expired' => 'Expired', 'cancelled' => 'Cancelled', 'refunded' => 'Refunded']],
-            ['name' => 'provider', 'placeholder' => 'All Providers', 'options' => ['paymongo' => 'PayMongo', 'fake' => 'Demo gateway', 'cash' => 'Cash']],
+            ['name' => 'status', 'placeholder' => 'All Statuses', 'options' => ['paid' => 'Paid', 'failed' => 'Failed', 'expired' => 'Expired', 'cancelled' => 'Cancelled', 'refunded' => 'Refunded']],
             ['name' => 'date_from', 'type' => 'date'],
             ['name' => 'date_to', 'type' => 'date'],
         ]" />
@@ -55,7 +54,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-empty-state icon="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" title="No payments found" message="Payments appear here once a document fee has been paid or a payment link has been created." :colspan="8" />
+                    <x-empty-state icon="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" title="No payments found" message="Payments appear here once a document fee has been paid in cash." :colspan="8" />
                 @endforelse
             </tbody>
         </table>

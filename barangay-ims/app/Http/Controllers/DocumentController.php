@@ -8,7 +8,6 @@ use App\Models\Resident;
 use App\Traits\LogsAudit;
 use App\Services\NumberSequenceService;
 use App\Services\DocumentTemplateRenderer;
-use App\Services\Payments\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -112,10 +111,8 @@ class DocumentController extends Controller
         ]);
 
         $paidPayment = $document->paidPayment();
-        $pendingPayment = $document->pendingPayment();
-        $onlinePaymentsEnabled = app(PaymentService::class)->onlinePaymentsConfigured();
 
-        return view('documents.show', compact('document', 'paidPayment', 'pendingPayment', 'onlinePaymentsEnabled'));
+        return view('documents.show', compact('document', 'paidPayment'));
     }
 
     public function edit(DocumentRequest $document)
@@ -235,12 +232,16 @@ class DocumentController extends Controller
                 return 'unpaid';
             }
 
-            $before = $this->auditSnapshot($locked);
+            // Capture snapshot BEFORE status change so the issued document
+            // reflects the 'approved' state, not 'released'.
             $locked->loadMissing(['resident.household', 'documentType.documentTemplate']);
+            $snapshot = app(DocumentTemplateRenderer::class)->snapshot($locked);
+
+            $before = $this->auditSnapshot($locked);
             $locked->update([
                 'status' => 'released',
                 'released_date' => now(),
-                'issued_document_snapshot' => app(DocumentTemplateRenderer::class)->snapshot($locked),
+                'issued_document_snapshot' => $snapshot,
                 'issued_at' => now(),
             ]);
 

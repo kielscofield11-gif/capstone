@@ -17,10 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo('/login');
-
-        $middleware->validateCsrfTokens(except: [
-            'webhooks/paymongo',
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -110,8 +110,12 @@ class HouseholdController extends Controller
             $deleted = \Illuminate\Support\Facades\DB::transaction(function () use ($household) {
                 $locked = Household::whereKey($household->id)->lockForUpdate()->first();
 
-                if (! $locked || $locked->residents()->exists()) {
-                    return false;
+                if (! $locked) {
+                    throw new \RuntimeException('Household not found');
+                }
+
+                if ($locked->residents()->exists()) {
+                    throw new \RuntimeException('Cannot delete household with existing residents. Remove residents first.');
                 }
 
                 $number = $locked->household_number;
@@ -122,12 +126,8 @@ class HouseholdController extends Controller
 
                 return true;
             });
-        } catch (\Illuminate\Database\QueryException) {
-            return back()->with('error', 'Cannot delete household with existing residents. Remove residents first.');
-        }
-
-        if (! $deleted) {
-            return back()->with('error', 'Cannot delete household with existing residents. Remove residents first.');
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
         }
 
         return redirect()->route('households.index')->with('success', 'Household deleted successfully.');
