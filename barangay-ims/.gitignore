@@ -36,3 +36,7 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+
+# Local deployment packages (built with `composer install --no-dev` for shared hosts)
+/*.zip
+
