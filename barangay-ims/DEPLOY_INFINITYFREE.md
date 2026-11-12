@@ -119,16 +119,24 @@ Connect with FileZilla (FTP credentials are in vPanel → **FTP Accounts**):
 3. If the vPanel file manager cannot see outside `htdocs/`, do both uploads
    over FTP with FileZilla instead; the layout above is what matters.
 
-Then edit `htdocs/index.php` so it boots the application one level up. Change
-the two paths at the bottom of the file (they normally point at `__DIR__`):
+3. Edit `htdocs/index.php` so it boots the application one level up. Change
+   the two paths at the bottom of the file (they normally point at `__DIR__`):
 
-```php
-require __DIR__.'/../barangay-ims/vendor/autoload.php';
+   ```php
+   require __DIR__.'/../barangay-ims/vendor/autoload.php';
 
-$app = require_once __DIR__.'/../barangay-ims/bootstrap/app.php';
-```
+   $app = require_once __DIR__.'/../barangay-ims/bootstrap/app.php';
+   ```
 
-Keep every other line unchanged.
+   Keep every other line unchanged.
+
+4. Upload `public/.htaccess` to `htdocs/` **unchanged** — it is the Laravel
+   front-controller rewrite file that routes every request to `index.php`
+   (without it, only `/` works and all other pages 404). It is a dotfile, so
+   enable *Server → Force showing hidden files* in FileZilla and confirm it
+   landed. The shipped version already has the `Options` line commented out
+   (shared hosts can reject it) and sets `DirectoryIndex index.php`. If the
+   host left a `default.html` in `htdocs/`, delete it.
 
 ## 5. Create the production `.env`
 
@@ -299,9 +307,35 @@ Application log (the only one available without SSH):
 
 ### 404 on every page except the homepage
 
-- `htdocs/.htaccess` was lost or `AllowOverride` rules do not apply. Re-upload
-  the `public/.htaccess` file unchanged; it is the standard Laravel rewrite
-  file.
+- `.htaccess` did not transfer. It is a dotfile: enable *Force showing hidden
+  files* in FileZilla and re-upload `public/.htaccess` into `htdocs/`. It is
+  required to route requests into `index.php`.
+- A `default.html` from the host is shadowing the app: delete it (the shipped
+  `.htaccess` sets `DirectoryIndex index.php`, but the stale page still gets
+  served on some setups).
+- `RewriteBase` is missing because the site was installed in a subdirectory —
+  not the case for the standard layout in step 4.
+
+### Branded InfinityFree "403 Forbidden" page
+
+If the error page shows the InfinityFree logo, it is served by their proxy
+before Apache reads your files. Nothing in your upload causes it. Usual
+causes, in order:
+
+- `htdocs/` has no index document yet (upload not finished) — confirm
+  `htdocs/index.php` exists in the file manager.
+- The subdomain is not activated yet (new sites take minutes), the account
+  email is not verified, or the site is suspended (check the client area).
+- SSL was requested but has not been issued yet: browse over `http://` until
+  the certificate shows as active, then switch to `https://`.
+- Visiting the wrong host (the panel URL or an IP) instead of the assigned
+  `<subdomain>.infinityfreeapp.com`.
+
+### 500 error immediately after uploading .htaccess
+
+- The `Options -MultiViews -Indexes` line is active and the host rejects
+  `Options` in `.htaccess`. The shipped file has it commented out — keep it
+  that way; nothing is lost (directory listing is off by default).
 
 ### 403/404 for setup.php or scheduler route
 

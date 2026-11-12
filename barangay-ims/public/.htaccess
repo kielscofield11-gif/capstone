@@ -1,9 +1,16 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        # Options -MultiViews -Indexes
+        # Commented out on purpose: shared hosts (InfinityFree) can reject
+        # `Options` in .htaccess with a server error. Directory listing is off
+        # by default there, so nothing is lost.
     </IfModule>
 
     RewriteEngine On
+
+    # Ensure Laravel's front controller wins over any default page the host
+    # leaves in the web root (default.html etc.).
+    DirectoryIndex index.php
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
