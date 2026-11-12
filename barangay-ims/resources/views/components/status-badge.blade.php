@@ -20,9 +20,6 @@ $defaults = [
 'failed' => ['bg-red-50 text-red-700 border-red-200', 'bg-red-500'],
 'expired' => ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'],
 'refunded' => ['bg-purple-50 text-purple-700 border-purple-200', 'bg-purple-500'],
-'payment_paid' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
-'payment_recorded' => ['bg-emerald-50 text-emerald-700 border-emerald-200', 'bg-emerald-500'],
-'payment_failed' => ['bg-red-50 text-red-700 border-red-200', 'bg-red-500'],
 ];
 $selected = $defaults[$status] ?? ['bg-gray-50 text-gray-600 border-gray-200', 'bg-gray-400'];
 @endphp

@@ -45,12 +45,6 @@
                         <td class="px-4 md:px-5 py-3 text-gray-600 hidden md:table-cell">{{ $doc->documentType?->name ?? 'N/A' }}</td>
                         <td class="px-4 md:px-5 py-3 text-gray-600 hidden sm:table-cell whitespace-nowrap">
                             <span class="block">₱{{ number_format($doc->fee_amount, 2) }}</span>
-                            @if((float) $doc->fee_amount > 0)
-                                <span class="mt-1 inline-flex items-center gap-1 text-xs {{ $doc->isPaid() ? 'text-emerald-600' : 'text-amber-600' }}">
-                                    <span class="h-1.5 w-1.5 rounded-full {{ $doc->isPaid() ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
-                                    {{ $doc->isPaid() ? 'Paid' : 'Unpaid' }}
-                                </span>
-                            @endif
                         </td>
                         <td class="px-4 md:px-5 py-3">
                             <x-status-badge :status="$doc->status">{{ ucfirst($doc->status) }}</x-status-badge>

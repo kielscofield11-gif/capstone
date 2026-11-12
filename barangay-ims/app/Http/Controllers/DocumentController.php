@@ -27,7 +27,7 @@ class DocumentController extends Controller
             'date_to' => 'nullable|date|after_or_equal:date_from',
         ]);
 
-        $query = DocumentRequest::with(['resident', 'documentType', 'requestedBy', 'payments']);
+        $query = DocumentRequest::with(['resident', 'documentType', 'requestedBy']);
 
         if ($request->filled('search')) {
             $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
@@ -107,12 +107,9 @@ class DocumentController extends Controller
             'documentType',
             'requestedBy',
             'approvedBy',
-            'payments' => fn ($query) => $query->latest(),
         ]);
 
-        $paidPayment = $document->paidPayment();
-
-        return view('documents.show', compact('document', 'paidPayment'));
+        return view('documents.show', compact('document'));
     }
 
     public function edit(DocumentRequest $document)
@@ -150,10 +147,6 @@ class DocumentController extends Controller
 
         $validated['fee_amount'] = $validated['fee_amount'] ?? $document->fee_amount;
 
-        if ($document->payments()->exists() && (float) $validated['fee_amount'] !== (float) $document->fee_amount) {
-            return back()->withInput()->with('error', 'The fee cannot be changed after a payment has been created.');
-        }
-
         $before = $this->auditSnapshot($document);
         $document->update($validated);
 
@@ -168,10 +161,6 @@ class DocumentController extends Controller
 
         if (in_array($document->status, ['approved', 'released'], true)) {
             return back()->with('error', 'Approved or released documents cannot be deleted to preserve history.');
-        }
-
-        if ($document->payments()->exists()) {
-            return back()->with('error', 'This document has payment records and cannot be deleted.');
         }
 
         $number = $document->control_number;
@@ -228,10 +217,6 @@ class DocumentController extends Controller
                 return 'not_approved';
             }
 
-            if (! $locked->isPaid()) {
-                return 'unpaid';
-            }
-
             // Capture snapshot BEFORE status change so the issued document
             // reflects the 'approved' state, not 'released'.
             $locked->loadMissing(['resident.household', 'documentType.documentTemplate']);
@@ -256,10 +241,6 @@ class DocumentController extends Controller
 
         if ($result === 'not_approved') {
             return back()->with('error', 'Only approved documents can be released.');
-        }
-
-        if ($result === 'unpaid') {
-            return back()->with('error', 'The document fee must be paid before this request can be released.');
         }
 
         return back()->with('success', 'Document marked as released.');

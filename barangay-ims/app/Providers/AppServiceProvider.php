@@ -8,7 +8,6 @@ use App\Models\DocumentRequest;
 use App\Models\DocumentType;
 use App\Models\DocumentTemplate;
 use App\Models\Household;
-use App\Models\Payment;
 use App\Models\Resident;
 use App\Models\User;
 use App\Policies\BlotterPolicy;
@@ -17,7 +16,6 @@ use App\Policies\DocumentRequestPolicy;
 use App\Policies\DocumentTypePolicy;
 use App\Policies\DocumentTemplatePolicy;
 use App\Policies\HouseholdPolicy;
-use App\Policies\PaymentPolicy;
 use App\Policies\ResidentPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Pagination\Paginator;
@@ -37,7 +35,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DocumentRequest::class, DocumentRequestPolicy::class);
         Gate::policy(DocumentType::class, DocumentTypePolicy::class);
         Gate::policy(DocumentTemplate::class, DocumentTemplatePolicy::class);
-        Gate::policy(Payment::class, PaymentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 
         Gate::define('view-reports', fn (User $user) => $user->hasAnyRole(User::ROLES));

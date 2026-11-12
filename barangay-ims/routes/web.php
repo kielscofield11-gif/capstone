@@ -16,8 +16,22 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\GeneratedDocumentController;
-use App\Http\Controllers\PaymentController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+
+// Shared-host scheduler trigger (InfinityFree has no cron). Disabled unless a
+// token is configured; see config/deploy.php and DEPLOY_INFINITYFREE.md.
+Route::get('/scheduler/run', function (Illuminate\Http\Request $request) {
+    $token = (string) config('deploy.scheduler_token');
+
+    if ($token === '' || ! hash_equals($token, (string) $request->query('token'))) {
+        abort(404);
+    }
+
+    Artisan::call('schedule:run');
+
+    return response(Artisan::output(), 200)->header('Content-Type', 'text/plain');
+})->name('scheduler.run');
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -53,10 +67,6 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::patch('/documents/{document}/cancel', [DocumentController::class, 'cancel'])->name('documents.cancel');
     Route::get('/documents/{document}/preview', [GeneratedDocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documents/{document}/pdf', [GeneratedDocumentController::class, 'pdf'])->name('documents.generated-pdf');
-
-    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
-    Route::post('/documents/{document}/payments/cash', [PaymentController::class, 'recordCash'])->name('documents.payments.cash');
 
     Route::resource('document-types', DocumentTypeController::class)->except(['show']);
 

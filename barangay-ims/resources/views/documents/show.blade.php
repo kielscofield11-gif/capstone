@@ -30,18 +30,6 @@
                         <dd class="font-medium text-gray-900">₱{{ number_format($document->fee_amount, 2) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500 text-xs">Payment</dt>
-                        <dd class="mt-1">
-                            @if((float) $document->fee_amount <= 0)
-                                <x-status-badge status="paid">No fee required</x-status-badge>
-                            @elseif($document->isPaid())
-                                <x-status-badge status="paid">Paid</x-status-badge>
-                            @else
-                                <x-status-badge status="unpaid">Unpaid</x-status-badge>
-                            @endif
-                        </dd>
-                    </div>
-                    <div>
                         <dt class="text-gray-500 text-xs">Date Requested</dt>
                         <dd class="font-medium text-gray-900">{{ $document->created_at->format('M d, Y h:i A') }}</dd>
                     </div>
@@ -95,78 +83,6 @@
                     <span>{{ $document->created_at->format('M d, Y h:i A') }}</span>
                 </div>
             </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500">Payment</h4>
-                @if((float) $document->fee_amount <= 0)
-                    <x-status-badge status="paid">No fee</x-status-badge>
-                @elseif($document->isPaid())
-                    <x-status-badge status="paid">Paid</x-status-badge>
-                @else
-                    <x-status-badge status="unpaid">Unpaid</x-status-badge>
-                @endif
-            </div>
-
-            @if((float) $document->fee_amount <= 0)
-                <p class="text-sm text-gray-500">No fee is required for this document type.</p>
-            @else
-                <dl class="space-y-2 text-sm">
-                    <div class="flex items-start justify-between gap-3">
-                        <dt class="text-gray-500">Fee</dt>
-                        <dd class="font-medium text-gray-900">₱{{ number_format($document->fee_amount, 2) }}</dd>
-                    </div>
-                    @if($paidPayment)
-                        <div class="flex items-start justify-between gap-3">
-                            <dt class="text-gray-500">Reference</dt>
-                            <dd class="text-right"><a href="{{ route('payments.show', $paidPayment) }}" class="font-medium text-brand-600 hover:text-brand-700">{{ $paidPayment->reference_number }}</a></dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <dt class="text-gray-500">Paid via</dt>
-                            <dd class="font-medium text-gray-900">{{ $paidPayment->method_label }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <dt class="text-gray-500">Paid at</dt>
-                            <dd class="font-medium text-gray-900 text-right">{{ $paidPayment->paid_at?->format('M d, Y h:i A') }}</dd>
-                        </div>
-                    @else
-                        <p class="text-sm text-gray-500">No payment has been recorded yet.</p>
-                    @endif
-                </dl>
-            @endif
-
-            @can('pay', $document)
-                @if($document->status !== 'cancelled' && (float) $document->fee_amount > 0 && ! $document->isPaid())
-                    <div class="mt-4 border-t border-gray-100 pt-4">
-                        <form action="{{ route('documents.payments.cash', $document) }}" method="POST"
-                              onsubmit="return confirm('Record a walk-in cash payment of ₱{{ number_format($document->fee_amount, 2) }}?')">
-                            @csrf
-                            <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m4 0h1M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                Record cash payment
-                            </button>
-                        </form>
-                    </div>
-                @endif
-            @endcan
-
-            @if($document->payments->isNotEmpty())
-                <div class="mt-4 border-t border-gray-100 pt-4">
-                    <p class="text-xs font-medium text-gray-500 mb-2">Payment history</p>
-                    <div class="space-y-2">
-                        @foreach($document->payments as $payment)
-                            <a href="{{ route('payments.show', $payment) }}" class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs hover:border-gray-200 hover:bg-gray-100/70">
-                                <span class="min-w-0">
-                                    <span class="block truncate font-medium text-gray-800">{{ $payment->reference_number }}</span>
-                                    <span class="block text-gray-500">{{ $payment->created_at->format('M d, Y') }}</span>
-                                </span>
-                                <x-status-badge :status="$payment->status">{{ ucfirst($payment->status) }}</x-status-badge>
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
         </div>
 
         <div class="flex flex-col gap-2">

@@ -40,33 +40,6 @@ class DocumentRequest extends Model
         return $this->belongsTo(DocumentType::class);
     }
 
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
-    }
-
-    public function paidPayment(): ?Payment
-    {
-        $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
-
-        return $payments
-            ->filter(fn (Payment $payment) => $payment->isPaid()
-                && (float) $payment->amount >= (float) $this->fee_amount)
-            ->sortByDesc(fn (Payment $payment) => $payment->paid_at ?? $payment->created_at)
-            ->first();
-    }
-
-    public function isPaid(): bool
-    {
-        if ((float) $this->fee_amount <= 0) {
-            // Free documents (fee <= 0) are considered paid by default.
-            // No payment record is required for release.
-            return true;
-        }
-
-        return $this->paidPayment() !== null;
-    }
-
     public function requestedBy()
     {
         return $this->belongsTo(User::class, 'requested_by');

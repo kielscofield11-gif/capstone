@@ -22,11 +22,6 @@ class DocumentRequestPolicy extends CoreRecordPolicy
         return $user->hasAnyRole(User::DOCUMENT_PROCESSORS);
     }
 
-    public function pay(User $user, DocumentRequest $document): bool
-    {
-        return $user->hasAnyRole(User::DOCUMENT_PROCESSORS);
-    }
-
     public function render(User $user, DocumentRequest $document): bool
     {
         return $this->view($user, $document) && $user->hasAnyRole(User::DOCUMENT_PROCESSORS);

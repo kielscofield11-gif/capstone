@@ -38,6 +38,14 @@ Tests use an in-memory SQLite database and do not require the application databa
 
 ## Production deployment
 
+Host-specific guides with exact commands:
+
+- **InfinityFree** (free shared hosting, no SSH/Composer/cron, symlinks
+  blocked): [DEPLOY_INFINITYFREE.md](DEPLOY_INFINITYFREE.md)
+- **alwaysdata** (free plan, SSH available): [DEPLOY_ALWAYSDATA.md](DEPLOY_ALWAYSDATA.md)
+
+Generic instructions follow; prefer the host guide when both apply.
+
 ### Server requirements
 
 - PHP 8.2+ with the `dom`, `fileinfo`, `gd`, `mbstring`, `openssl`, `xml`, `zip`, and `zlib` extensions
@@ -119,8 +127,7 @@ php artisan optimize
 - `GET https://your-host/up` returns a successful health response.
 - `php artisan migrate:status` reports no pending migrations.
 - Log in with each role, open the dashboard, create a resident, generate a
-  document PDF, run an export, and record a cash payment against a document
-  request.
+  document PDF, and run an export.
 - Check that `storage/logs/` is writable and that uploaded logos and resident
   photos are served from `/storage/...`.
 
@@ -131,14 +138,9 @@ php artisan optimize
 - The UI loads Tailwind CSS, Alpine.js, and Google Fonts from public CDNs. The
   browser needs internet access for styling and interactivity. For offline
   deployments, compile and serve these assets locally.
-
-## Document payments
-
-Document requests carry a fee that is collected in person at the barangay hall.
-Staff record a walk-in cash payment from the document request page, and a
-document cannot be marked released until its fee has been paid (zero-fee
-documents are exempt). Every recorded payment appears under **Payments** in the
-sidebar with its reference number, amount, and status.
+- Hosts that block symlinks (InfinityFree) cannot run `storage:link`. Set
+  `PUBLIC_DISK_IN_WEBROOT=true` in `.env` there so uploads are stored in a real
+  `public/storage` folder instead of `storage/app/public`.
 
 ## Security
 

@@ -12,7 +12,12 @@ return [
         ],
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // Shared hosts like InfinityFree don't support symlinks and have no
+            // SSH, so `php artisan storage:link` cannot be used there. With
+            // PUBLIC_DISK_IN_WEBROOT=true, uploads are stored in a real folder
+            // inside the web root (public/storage) instead, so /storage/...
+            // URLs resolve without a symlink. Local development is unchanged.
+            'root' => env('PUBLIC_DISK_IN_WEBROOT', false) ? public_path('storage') : storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,

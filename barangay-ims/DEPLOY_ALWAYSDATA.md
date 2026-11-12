@@ -137,9 +137,6 @@ SESSION_SECURE_COOKIE=true
 MAIL_MAILER=log
 MAIL_FROM_ADDRESS="no-reply@<account>.alwaysdata.net"
 
-# Currency used when recording document fees paid in cash.
-PAYMENT_CURRENCY=PHP
-
 # One-time passwords for the initial accounts. Set strong values now.
 SEED_ADMIN_PASSWORD="<strong-admin-password>"
 SEED_SECRETARY_PASSWORD="<strong-secretary-password>"
